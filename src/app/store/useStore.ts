@@ -58,6 +58,12 @@ export interface Board {
   description?: string;
 }
 
+export interface BoardFilters {
+  search: string;
+  priority: Priority | 'all';
+  assigneeId: string | 'all';
+}
+
 export interface Activity {
   id: string;
   type: 'task_created' | 'task_moved' | 'task_updated' | 'task_assigned' | 'list_created' | 'user_joined';
@@ -257,6 +263,7 @@ interface AppState {
   // Search & Filter
   searchQuery: string;
   boardSortBy: 'lastUpdated' | 'alphabetical';
+  boardFilters: BoardFilters;
 
   // Loading
   isLoadingBoards: boolean;
@@ -282,6 +289,7 @@ interface AppState {
   setTheme: (theme: 'light' | 'dark') => void;
   setSearchQuery: (query: string) => void;
   setBoardSortBy: (sortBy: 'lastUpdated' | 'alphabetical') => void;
+  setBoardFilters: (filters: Partial<BoardFilters>) => void;
 
   // Board actions
   fetchBoards: (page?: number) => Promise<void>;
@@ -347,6 +355,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   searchQuery: '',
   boardSortBy: 'lastUpdated',
+  boardFilters: {
+    search: '',
+    priority: 'all',
+    assigneeId: 'all',
+  },
   editingUsers: {},
 
   isLoadingBoards: false,
@@ -539,6 +552,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   setBoardSortBy: (sortBy) => set({ boardSortBy: sortBy }),
 
+  setBoardFilters: (filters) =>
+    set((state) => ({
+      boardFilters: { ...state.boardFilters, ...filters },
+    })),
+
   // ── Board Actions ─────────────────────────────────────────────────
 
   fetchBoards: async (page = 1) => {
@@ -606,7 +624,7 @@ export const useStore = create<AppState>((set, get) => ({
               id: t.id || t._id,
               title: t.title,
               description: t.description || '',
-              assignees: t.assignees?.map((a: any) => a.id || a._id || a) || [],
+              assignees: (t.assignments || t.assignees || []).map((a: any) => a.userId || a.user?.id || a.user?._id || a.id || a),
               dueDate: t.dueDate,
               listId: l.id || l._id,
               boardId: id,
@@ -843,9 +861,10 @@ export const useStore = create<AppState>((set, get) => ({
         const created = response.task || response;
         if (created.id || created._id) {
           const realId = created.id || created._id;
+          const mappedAssignees = (created.assignments || created.assignees || []).map((a: any) => a.userId || a.user?.id || a.user?._id || a.id || a);
           set((state) => ({
             tasks: state.tasks.map((t) =>
-              t.id === newTask.id ? { ...t, id: realId } : t
+              t.id === newTask.id ? { ...t, id: realId, assignees: mappedAssignees } : t
             ),
             lists: state.lists.map((l) =>
               l.id === listId
@@ -878,7 +897,19 @@ export const useStore = create<AppState>((set, get) => ({
     if (updates.order !== undefined) apiUpdates.position = updates.order;
 
     if (Object.keys(apiUpdates).length > 0) {
-      tasksApi.update(id, apiUpdates).catch(() => { });
+      tasksApi.update(id, apiUpdates)
+        .then((response) => {
+          const updated = response.task || response;
+          if (updated.assignments || updated.assignees) {
+            const mappedAssignees = (updated.assignments || updated.assignees || []).map((a: any) => a.userId || a.user?.id || a.user?._id || a.id || a);
+            set((state) => ({
+              tasks: state.tasks.map((t) =>
+                t.id === id ? { ...t, assignees: mappedAssignees } : t
+              ),
+            }));
+          }
+        })
+        .catch(() => { });
     }
   },
 

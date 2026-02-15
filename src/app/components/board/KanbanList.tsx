@@ -37,7 +37,7 @@ interface DragItem {
 }
 
 export function KanbanList({ list, index, moveList }: KanbanListProps) {
-  const { tasks, createTask, moveTask, updateListTitle, deleteList } = useStore();
+  const { tasks, boardFilters, createTask, moveTask, updateListTitle, deleteList } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(list.title);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -46,9 +46,22 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const taskInputRef = useRef<HTMLInputElement>(null);
 
-  // List tasks sorted by order
+  // List tasks filtered by search, priority, and assignee, then sorted by order
   const listTasks = tasks
-    .filter((t) => t.listId === list.id)
+    .filter((t) => {
+      if (t.listId !== list.id) return false;
+
+      const matchesSearch = !boardFilters.search ||
+        t.title.toLowerCase().includes(boardFilters.search.toLowerCase()) ||
+        t.description?.toLowerCase().includes(boardFilters.search.toLowerCase());
+
+      const matchesPriority = boardFilters.priority === 'all' || t.priority === boardFilters.priority;
+
+      const matchesAssignee = boardFilters.assigneeId === 'all' ||
+        t.assignees.includes(boardFilters.assigneeId);
+
+      return matchesSearch && matchesPriority && matchesAssignee;
+    })
     .sort((a, b) => a.order - b.order);
 
   // ── List Drag (for reordering lists) ────────────────────────────

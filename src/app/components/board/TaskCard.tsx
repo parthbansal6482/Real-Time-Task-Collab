@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { useStore, Task, User } from '../../store/useStore';
 import { useDrag } from 'react-dnd';
 import { Badge } from '../ui/badge';
@@ -14,13 +15,14 @@ import {
 import { formatDistanceToNow, isPast, parseISO } from 'date-fns';
 import { motion } from 'motion/react';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
 interface TaskCardProps {
   task: Task;
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-  const { users, setSelectedTaskId, toggleTaskComplete, deleteTask, editingUsers } =
+  const { users, setSelectedTaskId, toggleTaskComplete, deleteTask, updateTask, editingUsers } =
     useStore();
 
   // ── Drag Source ──────────────────────────────────────────────────
@@ -35,6 +37,10 @@ export function TaskCard({ task }: TaskCardProps) {
 
   // ── Computed Values ─────────────────────────────────────────────
 
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
   const assigneeUsers = task.assignees
     .map((id) => users.find((u) => u.id === id))
     .filter(Boolean) as User[];
@@ -45,6 +51,27 @@ export function TaskCard({ task }: TaskCardProps) {
     .map((uid) => users.find((u) => u.id === uid)?.name)
     .filter(Boolean);
   const commentCount = task.comments?.length || 0;
+
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.focus(), 50);
+  };
+
+  const handleSaveTitle = () => {
+    if (editTitle.trim() && editTitle.trim() !== task.title) {
+      updateTask(task.id, { title: editTitle.trim() });
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSaveTitle();
+    if (e.key === 'Escape') {
+      setEditTitle(task.title);
+      setIsEditingTitle(false);
+    }
+  };
 
   const priorityConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     high: { label: 'High', color: 'text-red-700', bgColor: 'bg-red-100 border-red-200' },
@@ -113,12 +140,25 @@ export function TaskCard({ task }: TaskCardProps) {
             <Circle className="w-4 h-4 text-gray-300 hover:text-indigo-400 transition-colors" />
           )}
         </button>
-        <h4
-          className={`text-sm font-medium leading-snug ${isCompleted ? 'line-through text-gray-400' : 'text-gray-900'
-            }`}
-        >
-          {task.title}
-        </h4>
+        {isEditingTitle ? (
+          <Input
+            ref={titleInputRef}
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onBlur={handleSaveTitle}
+            onKeyDown={handleTitleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            className="h-7 text-sm py-1 px-2 border-indigo-300 focus:ring-1 focus:ring-indigo-300"
+          />
+        ) : (
+          <h4
+            onClick={handleTitleClick}
+            className={`text-sm font-medium leading-snug hover:text-indigo-600 transition-colors ${isCompleted ? 'line-through text-gray-400' : 'text-gray-900'
+              }`}
+          >
+            {task.title}
+          </h4>
+        )}
       </div>
 
       {/* Description snippet */}

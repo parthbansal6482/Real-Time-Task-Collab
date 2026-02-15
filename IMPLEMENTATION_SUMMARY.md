@@ -16,6 +16,9 @@
 - Search and filter state
 - Task enhancements: priority (low/medium/high), tags, status (active/completed), comments
 - Board enhancements: member tracking, task counts
+- ✅ Inline list renaming
+- ✅ Delete list functionality
+- ✅ Drag to reorder lists
 - Real-time editing indicators (track who's editing what)
 
 ### 3. Enhanced Dashboard
@@ -131,12 +134,13 @@
 ## 📋 STILL TO IMPLEMENT (from original requirements)
 
 ### Board View Enhancements
-- Inline list renaming
-- Delete list functionality
-- Drag to reorder lists
+### Board View Enhancements
+- ✅ Inline list renaming (Completed)
+- ✅ Delete list functionality (Completed)
+- ✅ Drag to reorder lists (Completed)
 - Inline task editing
-- Delete task from card
-- List drag-and-drop (currently only tasks are draggable)
+- Delete task from card (Completed - already has trash icon)
+- List drag-and-drop (Completed - part of reorder lists)
 
 ### Task Modal Enhancements
 - Rich description editor
