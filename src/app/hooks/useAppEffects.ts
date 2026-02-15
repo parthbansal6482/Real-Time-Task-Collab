@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { getSocket } from '../services/socket';
+import { SOCKET_EVENTS } from '../services/socketEvents';
 
 /**
  * Handle all real-time WebSocket events and update the Zustand store.
@@ -12,6 +13,17 @@ export function useSocketEffects() {
     removeUserEditing,
     addActivity,
     addNotification,
+    onTaskCreated,
+    onTaskUpdated,
+    onTaskDeleted,
+    onTaskMoved,
+    onTaskAssigned,
+    onTaskUnassigned,
+    onListCreated,
+    onListUpdated,
+    onListDeleted,
+    onBoardUpdated,
+    onBoardCreated,
   } = useStore();
 
   useEffect(() => {
@@ -22,152 +34,44 @@ export function useSocketEffects() {
 
     // ── Task Events ───────────────────────────────────────────────
 
-    const handleTaskCreated = (data: any) => {
-      const state = useStore.getState();
-      const task = {
-        id: data.id || data._id,
-        title: data.title,
-        description: data.description || '',
-        assignees: data.assignees || [],
-        dueDate: data.dueDate,
-        listId: data.listId,
-        boardId: data.boardId,
-        createdAt: data.createdAt || new Date().toISOString(),
-        order: data.position ?? data.order ?? 0,
-        priority: data.priority || 'medium',
-        tags: data.tags || [],
-        status: data.status || 'active',
-        comments: data.comments || [],
-      };
-
-      // Don't add if already exists (this user created it)
-      if (state.tasks.some((t) => t.id === task.id)) return;
-
-      useStore.setState((s) => ({
-        tasks: [...s.tasks, task],
-        lists: s.lists.map((l) =>
-          l.id === task.listId ? { ...l, taskIds: [...l.taskIds, task.id] } : l
-        ),
-      }));
-    };
-
-    const handleTaskUpdated = (data: any) => {
-      const taskId = data.id || data._id;
-      useStore.setState((s) => ({
-        tasks: s.tasks.map((t) =>
-          t.id === taskId ? { ...t, ...data, id: taskId } : t
-        ),
-      }));
-    };
-
-    const handleTaskDeleted = (data: any) => {
-      const taskId = data.id || data._id || data.taskId;
-      useStore.setState((s) => ({
-        tasks: s.tasks.filter((t) => t.id !== taskId),
-        lists: s.lists.map((l) => ({
-          ...l,
-          taskIds: l.taskIds.filter((tid) => tid !== taskId),
-        })),
-      }));
-    };
-
+    const handleTaskCreated = (data: any) => onTaskCreated(data);
+    const handleTaskUpdated = (data: any) => onTaskUpdated(data);
+    const handleTaskDeleted = (data: any) => onTaskDeleted(data.taskId || data.id, data.listId);
     const handleTaskMoved = (data: any) => {
-      const { taskId, fromListId, toListId, position } = data;
-      useStore.setState((s) => ({
-        tasks: s.tasks.map((t) =>
-          t.id === taskId ? { ...t, listId: toListId, order: position ?? t.order } : t
-        ),
-        lists: s.lists.map((l) => {
-          if (l.id === fromListId) {
-            return { ...l, taskIds: l.taskIds.filter((id) => id !== taskId) };
-          }
-          if (l.id === toListId) {
-            const ids = [...l.taskIds];
-            ids.splice(position ?? ids.length, 0, taskId);
-            return { ...l, taskIds: ids };
-          }
-          return l;
-        }),
-      }));
+      onTaskMoved(data.taskId, data.oldListId, data.newListId, data.position, data);
     };
+    const handleTaskAssigned = (data: any) => onTaskAssigned(data.taskId, data.userId, data.assignment);
+    const handleTaskUnassigned = (data: any) => onTaskUnassigned(data.taskId, data.userId);
 
     // ── List Events ───────────────────────────────────────────────
 
-    const handleListCreated = (data: any) => {
-      const list = {
-        id: data.id || data._id,
-        title: data.name || data.title,
-        boardId: data.boardId,
-        order: data.position ?? data.order ?? 0,
-        taskIds: [],
-      };
-
-      const state = useStore.getState();
-      if (state.lists.some((l) => l.id === list.id)) return;
-
-      useStore.setState((s) => ({
-        lists: [...s.lists, list],
-      }));
-    };
-
-    const handleListUpdated = (data: any) => {
-      const listId = data.id || data._id;
-      useStore.setState((s) => ({
-        lists: s.lists.map((l) =>
-          l.id === listId
-            ? { ...l, title: data.name || data.title || l.title, order: data.position ?? l.order }
-            : l
-        ),
-      }));
-    };
-
-    const handleListDeleted = (data: any) => {
-      const listId = data.id || data._id || data.listId;
-      useStore.setState((s) => ({
-        lists: s.lists.filter((l) => l.id !== listId),
-        tasks: s.tasks.filter((t) => t.listId !== listId),
-      }));
-    };
+    const handleListCreated = (data: any) => onListCreated(data);
+    const handleListUpdated = (data: any) => onListUpdated(data);
+    const handleListDeleted = (data: any) => onListDeleted(data.listId || data.id);
 
     // ── Board Events ──────────────────────────────────────────────
 
-    const handleBoardUpdated = (data: any) => {
-      const boardId = data.id || data._id;
-      useStore.setState((s) => ({
-        boards: s.boards.map((b) =>
-          b.id === boardId
-            ? { ...b, title: data.name || data.title || b.title, updatedAt: data.updatedAt || b.updatedAt }
-            : b
-        ),
-      }));
+    const handleBoardUpdated = (data: any) => onBoardUpdated(data);
+    const handleBoardCreated = (data: any) => onBoardCreated(data);
+    const handleBoardDeleted = (_data: any) => {
+      // If the current board is deleted, redirect to dashboard
+      const state = useStore.getState();
+      if (state.selectedBoardId === _data.boardId) {
+        state.setCurrentView('dashboard');
+        state.setSelectedBoardId(null);
+      }
     };
 
     // ── Member Events ─────────────────────────────────────────────
 
     const handleMemberAdded = (data: any) => {
-      const { boardId, user } = data;
-      if (!user) return;
-
-      const newUser = {
-        id: user.id || user._id,
-        name: user.username || user.name,
-        email: user.email || '',
-        avatar: (user.username || user.name || '')
-          .split(' ')
-          .map((n: string) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2),
-        online: user.online ?? true,
-      };
+      const { boardId, member } = data;
+      if (!member) return;
 
       useStore.setState((s) => ({
         boards: s.boards.map((b) =>
-          b.id === boardId ? { ...b, memberIds: [...b.memberIds, newUser.id] } : b
+          b.id === boardId ? { ...b, memberIds: [...b.memberIds, member.userId] } : b
         ),
-        users: s.users.some((u) => u.id === newUser.id)
-          ? s.users
-          : [...s.users, newUser],
       }));
     };
 
@@ -193,7 +97,7 @@ export function useSocketEffects() {
       }));
       addNotification({
         title: 'User joined',
-        message: `${data.name || 'A user'} has come online`,
+        message: `${data.username || data.name || 'A user'} has come online`,
         type: 'general',
       });
     };
@@ -227,40 +131,71 @@ export function useSocketEffects() {
       setTimeout(() => removeUserEditing(taskId, userId), 30000);
     };
 
+    const handleUserStoppedEditing = (data: any) => {
+      const { taskId, userId } = data;
+      removeUserEditing(taskId, userId);
+    };
+
     // ── Register Listeners ────────────────────────────────────────
 
-    socket.on('task:created', handleTaskCreated);
-    socket.on('task:updated', handleTaskUpdated);
-    socket.on('task:deleted', handleTaskDeleted);
-    socket.on('task:moved', handleTaskMoved);
-    socket.on('list:created', handleListCreated);
-    socket.on('list:updated', handleListUpdated);
-    socket.on('list:deleted', handleListDeleted);
-    socket.on('board:updated', handleBoardUpdated);
-    socket.on('member:added', handleMemberAdded);
-    socket.on('member:removed', handleMemberRemoved);
-    socket.on('user:joined', handleUserJoined);
-    socket.on('user:left', handleUserLeft);
-    socket.on('activity:new', handleNewActivity);
-    socket.on('user:editing', handleUserEditing);
+    socket.on(SOCKET_EVENTS.TASK_CREATED, handleTaskCreated);
+    socket.on(SOCKET_EVENTS.TASK_UPDATED, handleTaskUpdated);
+    socket.on(SOCKET_EVENTS.TASK_DELETED, handleTaskDeleted);
+    socket.on(SOCKET_EVENTS.TASK_MOVED, handleTaskMoved);
+    socket.on(SOCKET_EVENTS.TASK_ASSIGNED, handleTaskAssigned);
+    socket.on(SOCKET_EVENTS.TASK_UNASSIGNED, handleTaskUnassigned);
+    socket.on(SOCKET_EVENTS.LIST_CREATED, handleListCreated);
+    socket.on(SOCKET_EVENTS.LIST_UPDATED, handleListUpdated);
+    socket.on(SOCKET_EVENTS.LIST_DELETED, handleListDeleted);
+    socket.on(SOCKET_EVENTS.BOARD_CREATED, handleBoardCreated);
+    socket.on(SOCKET_EVENTS.BOARD_UPDATED, handleBoardUpdated);
+    socket.on(SOCKET_EVENTS.BOARD_DELETED, handleBoardDeleted);
+    socket.on(SOCKET_EVENTS.MEMBER_ADDED, handleMemberAdded);
+    socket.on(SOCKET_EVENTS.MEMBER_REMOVED, handleMemberRemoved);
+    socket.on(SOCKET_EVENTS.USER_JOINED, handleUserJoined);
+    socket.on(SOCKET_EVENTS.USER_LEFT, handleUserLeft);
+    socket.on(SOCKET_EVENTS.ACTIVITY_NEW, handleNewActivity);
+    socket.on(SOCKET_EVENTS.USER_EDITING, handleUserEditing);
+    socket.on(SOCKET_EVENTS.USER_STOPPED_EDITING, handleUserStoppedEditing);
 
     return () => {
-      socket.off('task:created', handleTaskCreated);
-      socket.off('task:updated', handleTaskUpdated);
-      socket.off('task:deleted', handleTaskDeleted);
-      socket.off('task:moved', handleTaskMoved);
-      socket.off('list:created', handleListCreated);
-      socket.off('list:updated', handleListUpdated);
-      socket.off('list:deleted', handleListDeleted);
-      socket.off('board:updated', handleBoardUpdated);
-      socket.off('member:added', handleMemberAdded);
-      socket.off('member:removed', handleMemberRemoved);
-      socket.off('user:joined', handleUserJoined);
-      socket.off('user:left', handleUserLeft);
-      socket.off('activity:new', handleNewActivity);
-      socket.off('user:editing', handleUserEditing);
+      socket.off(SOCKET_EVENTS.TASK_CREATED, handleTaskCreated);
+      socket.off(SOCKET_EVENTS.TASK_UPDATED, handleTaskUpdated);
+      socket.off(SOCKET_EVENTS.TASK_DELETED, handleTaskDeleted);
+      socket.off(SOCKET_EVENTS.TASK_MOVED, handleTaskMoved);
+      socket.off(SOCKET_EVENTS.TASK_ASSIGNED, handleTaskAssigned);
+      socket.off(SOCKET_EVENTS.TASK_UNASSIGNED, handleTaskUnassigned);
+      socket.off(SOCKET_EVENTS.LIST_CREATED, handleListCreated);
+      socket.off(SOCKET_EVENTS.LIST_UPDATED, handleListUpdated);
+      socket.off(SOCKET_EVENTS.LIST_DELETED, handleListDeleted);
+      socket.off(SOCKET_EVENTS.BOARD_CREATED, handleBoardCreated);
+      socket.off(SOCKET_EVENTS.BOARD_UPDATED, handleBoardUpdated);
+      socket.off(SOCKET_EVENTS.BOARD_DELETED, handleBoardDeleted);
+      socket.off(SOCKET_EVENTS.MEMBER_ADDED, handleMemberAdded);
+      socket.off(SOCKET_EVENTS.MEMBER_REMOVED, handleMemberRemoved);
+      socket.off(SOCKET_EVENTS.USER_JOINED, handleUserJoined);
+      socket.off(SOCKET_EVENTS.USER_LEFT, handleUserLeft);
+      socket.off(SOCKET_EVENTS.ACTIVITY_NEW, handleNewActivity);
+      socket.off(SOCKET_EVENTS.USER_EDITING, handleUserEditing);
+      socket.off(SOCKET_EVENTS.USER_STOPPED_EDITING, handleUserStoppedEditing);
     };
-  }, [isAuthenticated, setUserEditing, removeUserEditing, addActivity, addNotification]);
+  }, [
+    isAuthenticated,
+    setUserEditing,
+    removeUserEditing,
+    addActivity,
+    addNotification,
+    onTaskCreated,
+    onTaskUpdated,
+    onTaskDeleted,
+    onTaskMoved,
+    onTaskAssigned,
+    onTaskUnassigned,
+    onListCreated,
+    onListUpdated,
+    onListDeleted,
+    onBoardUpdated,
+  ]);
 }
 
 /**

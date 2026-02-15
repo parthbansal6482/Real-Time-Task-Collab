@@ -28,6 +28,11 @@ export const createBoard = asyncHandler(async (req: AuthRequest, res: Response) 
 
     const result = await boardService.createBoard(userId, name, description, color, memberIds);
 
+    // Notify all members via their user rooms
+    result.board.members.forEach((member: any) => {
+        getIO().to(`user:${member.userId}`).emit('board:created', { board: result.board });
+    });
+
     await activityService.logActivity({
         boardId: result.board.id,
         userId,
@@ -99,6 +104,11 @@ export const addMember = asyncHandler(async (req: AuthRequest, res: Response) =>
     const userId = req.user!.userId;
     const boardId = req.params.boardId as string;
     const result = await boardService.addMember(boardId, req.body.userId);
+
+    // Fetch full board for the new member
+    const boardData = await boardService.getBoard(boardId);
+
+    getIO().to(`user:${req.body.userId}`).emit('board:created', { board: boardData.board });
 
     await activityService.logActivity({
         boardId,

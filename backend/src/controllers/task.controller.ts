@@ -23,8 +23,9 @@ export const getTasksByList = asyncHandler(async (req: AuthRequest, res: Respons
 export const createTask = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId;
     const listId = req.params.listId as string;
+    const { cid, ...taskData } = req.body;
 
-    const result = await taskService.createTask(listId, userId, req.body);
+    const result = await taskService.createTask(listId, userId, taskData);
 
     await activityService.logActivity({
         boardId: result.boardId,
@@ -35,9 +36,12 @@ export const createTask = asyncHandler(async (req: AuthRequest, res: Response) =
         metadata: { title: result.task.title, listId },
     });
 
-    getIO().to(`board:${result.boardId}`).emit('task:created', { task: result.task });
+    getIO().to(`board:${result.boardId}`).emit('task:created', {
+        task: result.task,
+        cid // Echo back the client-side temporary ID for deduplication
+    });
 
-    ApiResponse.created(res, { task: result.task }, 'Task created successfully');
+    ApiResponse.created(res, { task: result.task, cid }, 'Task created successfully');
 });
 
 /**

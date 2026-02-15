@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore, Task, User, Priority } from '../../store/useStore';
 import {
   Dialog,
@@ -28,9 +28,14 @@ import {
   Minus,
   ArrowDown,
   CheckCircle2,
+  Save,
 } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
+import { getSocket } from '../../services/socket';
+import { SOCKET_EVENTS } from '../../services/socketEvents';
+import { tasksApi } from '../../services/api';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,10 +64,15 @@ export function TaskModal() {
   const task = tasks.find((t) => t.id === selectedTaskId);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editPriority, setEditPriority] = useState<Priority>('medium');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editAssignees, setEditAssignees] = useState<string[]>([]);
+  const [editTags, setEditTags] = useState<string[]>([]);
   const [newComment, setNewComment] = useState('');
   const [newTag, setNewTag] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,12 +81,41 @@ export function TaskModal() {
     if (task) {
       setEditTitle(task.title);
       setEditDescription(task.description);
+      setEditPriority(task.priority || 'medium');
+      setEditDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+      setEditAssignees([...task.assignees]);
+      setEditTags([...(task.tags || [])]);
+
+      // Sync editing status to other users
+      const socket = getSocket();
+      if (socket) {
+        socket.emit(SOCKET_EVENTS.USER_EDITING, { taskId: task.id, boardId: task.boardId });
+      }
+
+      return () => {
+        if (socket) {
+          socket.emit(SOCKET_EVENTS.USER_STOPPED_EDITING, { taskId: task.id, boardId: task.boardId });
+        }
+      };
     }
-  }, [task?.id]);
+  }, [task?.id, task?.boardId]);
+
+  // Detect if there are unsaved changes
+  const hasChanges = useMemo(() => {
+    if (!task) return false;
+    if (editTitle.trim() !== task.title) return true;
+    if (editDescription !== task.description) return true;
+    if (editPriority !== task.priority) return true;
+    const taskDueDate = task.dueDate ? task.dueDate.split('T')[0] : '';
+    if (editDueDate !== taskDueDate) return true;
+    if (JSON.stringify([...editAssignees].sort()) !== JSON.stringify([...task.assignees].sort())) return true;
+    if (JSON.stringify([...editTags].sort()) !== JSON.stringify([...(task.tags || [])].sort())) return true;
+    return false;
+  }, [task, editTitle, editDescription, editPriority, editDueDate, editAssignees, editTags]);
 
   if (!task) return null;
 
-  const assigneeUsers = task.assignees
+  const assigneeUsers = editAssignees
     .map((id) => users.find((u) => u.id === id))
     .filter(Boolean) as User[];
 
@@ -84,45 +123,31 @@ export function TaskModal() {
   const availableUsers = users.filter((u) => {
     // Only show users who are members of the board AND not already assigned to the task
     const isMember = currentBoard?.memberIds.includes(u.id);
-    const isAssigned = task.assignees.includes(u.id);
+    const isAssigned = editAssignees.includes(u.id);
     return isMember && !isAssigned;
   });
   const taskActivities = activities.filter((a) => a.boardId === task.boardId).slice(0, 10);
 
   // ── Handlers ──────────────────────────────────────────────────────
 
-  const handleSaveTitle = () => {
-    if (editTitle.trim() && editTitle !== task.title) {
-      updateTask(task.id, { title: editTitle.trim() });
-    }
-  };
-
-  const handleSaveDescription = () => {
-    if (editDescription !== task.description) {
-      updateTask(task.id, { description: editDescription });
-    }
-  };
-
   const handleToggleAssignee = (userId: string) => {
-    const newAssignees = task.assignees.includes(userId)
-      ? task.assignees.filter((id) => id !== userId)
-      : [...task.assignees, userId];
-    updateTask(task.id, { assignees: newAssignees });
+    setEditAssignees((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
   };
 
   const handleSetPriority = (priority: Priority) => {
-    updateTask(task.id, { priority });
+    setEditPriority(priority);
   };
 
   const handleSetDueDate = (date: string) => {
-    updateTask(task.id, { dueDate: date || undefined });
+    setEditDueDate(date);
   };
 
   const handleAddTag = () => {
     if (newTag.trim()) {
-      const currentTags = task.tags || [];
-      if (!currentTags.includes(newTag.trim())) {
-        updateTask(task.id, { tags: [...currentTags, newTag.trim()] });
+      if (!editTags.includes(newTag.trim())) {
+        setEditTags((prev) => [...prev, newTag.trim()]);
       }
       setNewTag('');
       setIsAddingTag(false);
@@ -130,7 +155,57 @@ export function TaskModal() {
   };
 
   const handleRemoveTag = (tag: string) => {
-    updateTask(task.id, { tags: (task.tags || []).filter((t) => t !== tag) });
+    setEditTags((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleSaveChanges = async () => {
+    if (!task || !hasChanges) return;
+    setIsSaving(true);
+    try {
+      // Build local updates
+      const updates: Partial<Task> = {};
+      if (editTitle.trim() !== task.title) updates.title = editTitle.trim();
+      if (editDescription !== task.description) updates.description = editDescription;
+      if (editPriority !== task.priority) updates.priority = editPriority;
+      if (editDueDate !== (task.dueDate ? task.dueDate.split('T')[0] : '')) {
+        updates.dueDate = editDueDate ? new Date(editDueDate).toISOString() : undefined;
+      }
+      if (JSON.stringify([...editTags].sort()) !== JSON.stringify([...(task.tags || [])].sort())) {
+        updates.tags = editTags;
+      }
+      if (JSON.stringify([...editAssignees].sort()) !== JSON.stringify([...task.assignees].sort())) {
+        updates.assignees = editAssignees;
+      }
+
+      // Update local store
+      updateTask(task.id, updates);
+
+      // Handle assignee changes via backend API
+      const addedAssignees = editAssignees.filter((id) => !task.assignees.includes(id));
+      const removedAssignees = task.assignees.filter((id) => !editAssignees.includes(id));
+
+      for (const userId of addedAssignees) {
+        try {
+          await tasksApi.assign(task.id, userId);
+        } catch (err) {
+          console.error(`[TaskModal] Failed to assign user ${userId}:`, err);
+        }
+      }
+      for (const userId of removedAssignees) {
+        try {
+          await tasksApi.unassign(task.id, userId);
+        } catch (err) {
+          console.error(`[TaskModal] Failed to unassign user ${userId}:`, err);
+        }
+      }
+
+      toast.success('Changes saved!');
+    } catch (error: any) {
+      console.error('[TaskModal] Save failed:', error);
+      toast.error(error.message || 'Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddComment = () => {
@@ -182,8 +257,6 @@ export function TaskModal() {
                   <Input
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={handleSaveTitle}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
                     className={`text-lg font-semibold border-none p-0 h-auto focus-visible:ring-0 ${task.status === 'completed' ? 'line-through text-gray-400' : ''
                       }`}
                   />
@@ -202,7 +275,7 @@ export function TaskModal() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleSetPriority(opt.value)}
-                      className={`text-xs h-7 ${task.priority === opt.value ? opt.color : 'text-gray-500'
+                      className={`text-xs h-7 ${editPriority === opt.value ? opt.color : 'text-gray-500'
                         }`}
                     >
                       {opt.icon}
@@ -218,7 +291,7 @@ export function TaskModal() {
                   <Tag className="w-3 h-3" /> Tags
                 </Label>
                 <div className="flex flex-wrap gap-1.5 items-center">
-                  {(task.tags || []).map((tag) => (
+                  {editTags.map((tag) => (
                     <Badge
                       key={tag}
                       variant="secondary"
@@ -273,7 +346,6 @@ export function TaskModal() {
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  onBlur={handleSaveDescription}
                   placeholder="Add a description..."
                   className="w-full min-h-[80px] p-3 text-sm border border-gray-200 rounded-lg
                     resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
@@ -293,8 +365,8 @@ export function TaskModal() {
                   </Label>
                   <Input
                     type="date"
-                    value={task.dueDate ? task.dueDate.split('T')[0] : ''}
-                    onChange={(e) => handleSetDueDate(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                    value={editDueDate}
+                    onChange={(e) => handleSetDueDate(e.target.value)}
                     className="text-sm h-9"
                   />
                 </div>
@@ -455,8 +527,8 @@ export function TaskModal() {
                 </div>
               )}
 
-              {/* Delete Button */}
-              <div className="pt-2">
+              {/* Save & Delete Buttons */}
+              <div className="flex items-center justify-between pt-2">
                 <Button
                   variant="ghost"
                   onClick={() => setShowDeleteDialog(true)}
@@ -464,6 +536,17 @@ export function TaskModal() {
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete task
+                </Button>
+                <Button
+                  onClick={handleSaveChanges}
+                  disabled={!hasChanges || isSaving}
+                  className={`text-sm transition-all ${hasChanges
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>

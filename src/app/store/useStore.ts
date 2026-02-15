@@ -28,6 +28,7 @@ export interface Task {
   priority?: Priority;
   tags?: string[];
   status: TaskStatus;
+  creatorId: string;
   comments?: Comment[];
 }
 
@@ -50,12 +51,15 @@ export interface List {
 export interface Board {
   id: string;
   title: string;
+  description: string;
   color: string;
+  memberIds: string[];
+  ownerId: string;
+  owner?: { id: string; username: string; email: string };
   createdAt: string;
   updatedAt: string;
-  memberIds: string[];
-  taskCount?: number;
-  description?: string;
+  taskCount: number;
+  lists: number;
 }
 
 export interface BoardFilters {
@@ -82,148 +86,6 @@ export interface Notification {
   type: 'task_assigned' | 'task_due' | 'mention' | 'general';
 }
 
-// ── Mock Data (used when no backend is available) ─────────────────────
-
-const mockUsers: User[] = [
-  { id: '1', name: 'Sarah Chen', email: 'sarah@example.com', avatar: 'SC', online: true },
-  { id: '2', name: 'Alex Rivera', email: 'alex@example.com', avatar: 'AR', online: true },
-  { id: '3', name: 'Jordan Smith', email: 'jordan@example.com', avatar: 'JS', online: true },
-  { id: '4', name: 'Emma Wilson', email: 'emma@example.com', avatar: 'EW', online: true },
-  { id: '5', name: 'David Kim', email: 'david@example.com', avatar: 'DK', online: true },
-];
-
-const mockBoards: Board[] = [
-  {
-    id: 'board-1',
-    title: 'Product Launch Q1',
-    color: '#6366f1',
-    createdAt: '2025-01-15T10:00:00Z',
-    updatedAt: '2025-02-14T15:30:00Z',
-    memberIds: ['1', '2', '3'],
-    taskCount: 8,
-    description: 'Q1 product launch planning and execution',
-  },
-  {
-    id: 'board-2',
-    title: 'Engineering Sprint',
-    color: '#8b5cf6',
-    createdAt: '2025-02-01T09:00:00Z',
-    updatedAt: '2025-02-13T11:00:00Z',
-    memberIds: ['1', '4'],
-    taskCount: 5,
-    description: 'Current sprint tasks and bugs',
-  },
-  {
-    id: 'board-3',
-    title: 'Design System',
-    color: '#ec4899',
-    createdAt: '2025-01-20T14:00:00Z',
-    updatedAt: '2025-02-12T09:00:00Z',
-    memberIds: ['2', '3'],
-    taskCount: 3,
-    description: 'Component library and design tokens',
-  },
-];
-
-const mockLists: List[] = [
-  { id: 'list-1', title: 'To Do', boardId: 'board-1', order: 0, taskIds: ['task-1', 'task-2', 'task-3'] },
-  { id: 'list-2', title: 'In Progress', boardId: 'board-1', order: 1, taskIds: ['task-4', 'task-5'] },
-  { id: 'list-3', title: 'Review', boardId: 'board-1', order: 2, taskIds: ['task-6'] },
-  { id: 'list-4', title: 'Done', boardId: 'board-1', order: 3, taskIds: ['task-7', 'task-8'] },
-  { id: 'list-5', title: 'Backlog', boardId: 'board-2', order: 0, taskIds: ['task-9', 'task-10'] },
-  { id: 'list-6', title: 'In Progress', boardId: 'board-2', order: 1, taskIds: ['task-11', 'task-12'] },
-  { id: 'list-7', title: 'Done', boardId: 'board-2', order: 2, taskIds: ['task-13'] },
-];
-
-const mockTasks: Task[] = [
-  {
-    id: 'task-1', title: 'Design landing page mockup', description: 'Create high-fidelity mockup for the new landing page, including hero section, features overview, and testimonials.',
-    assignees: ['2', '3'], listId: 'list-1', boardId: 'board-1', createdAt: '2025-02-10T09:00:00Z',
-    order: 0, priority: 'high', tags: ['design', 'landing-page'], status: 'active',
-    comments: [
-      { id: 'c1', taskId: 'task-1', userId: '2', content: 'I have started working on the hero section. Should have a draft by tomorrow.', createdAt: '2025-02-11T10:00:00Z' },
-      { id: 'c2', taskId: 'task-1', userId: '3', content: 'Great! I\u2019ll handle the features overview section.', createdAt: '2025-02-11T14:00:00Z' },
-    ],
-  },
-  {
-    id: 'task-2', title: 'Write API documentation', description: 'Document all REST endpoints with request/response examples.',
-    assignees: ['1'], listId: 'list-1', boardId: 'board-1', createdAt: '2025-02-10T10:00:00Z',
-    order: 1, priority: 'medium', tags: ['docs', 'api'], status: 'active', dueDate: '2025-02-20T23:59:00Z',
-  },
-  {
-    id: 'task-3', title: 'Set up CI/CD pipeline', description: 'Configure GitHub Actions for automated testing and deployment.',
-    assignees: ['4'], listId: 'list-1', boardId: 'board-1', createdAt: '2025-02-09T14:00:00Z',
-    order: 2, priority: 'high', tags: ['devops'], status: 'active', dueDate: '2025-02-16T23:59:00Z',
-  },
-  {
-    id: 'task-4', title: 'Implement user authentication', description: 'Add JWT-based authentication with login, signup, and password reset.',
-    assignees: ['1', '4'], listId: 'list-2', boardId: 'board-1', createdAt: '2025-02-08T09:00:00Z',
-    order: 0, priority: 'high', tags: ['auth', 'backend'], status: 'active',
-    comments: [
-      { id: 'c3', taskId: 'task-4', userId: '1', content: 'Login and signup are done. Working on password reset next.', createdAt: '2025-02-12T16:00:00Z' },
-    ],
-  },
-  {
-    id: 'task-5', title: 'Build notification system', description: 'Real-time notifications for task assignments, mentions, and due dates.',
-    assignees: ['1'], listId: 'list-2', boardId: 'board-1', createdAt: '2025-02-07T11:00:00Z',
-    order: 1, priority: 'medium', tags: ['notifications', 'real-time'], status: 'active',
-  },
-  {
-    id: 'task-6', title: 'Review PR: Dashboard redesign', description: 'Review the pull request for the new dashboard layout with analytics widgets.',
-    assignees: ['2'], listId: 'list-3', boardId: 'board-1', createdAt: '2025-02-11T15:00:00Z',
-    order: 0, priority: 'medium', tags: ['review'], status: 'active',
-  },
-  {
-    id: 'task-7', title: 'Database schema migration', description: 'Migrate from MongoDB to PostgreSQL schema.',
-    assignees: ['4'], listId: 'list-4', boardId: 'board-1', createdAt: '2025-02-05T10:00:00Z',
-    order: 0, priority: 'low', tags: ['database'], status: 'completed',
-  },
-  {
-    id: 'task-8', title: 'Set up project repository', description: 'Initialize project with Vite, React, TypeScript, and configure ESLint.',
-    assignees: ['1'], listId: 'list-4', boardId: 'board-1', createdAt: '2025-02-01T09:00:00Z',
-    order: 1, priority: 'low', tags: ['setup'], status: 'completed',
-  },
-  {
-    id: 'task-9', title: 'Performance audit', description: 'Run Lighthouse audit and fix key performance issues.',
-    assignees: ['4'], listId: 'list-5', boardId: 'board-2', createdAt: '2025-02-10T09:00:00Z',
-    order: 0, priority: 'medium', tags: ['performance'], status: 'active',
-  },
-  {
-    id: 'task-10', title: 'Add dark mode support', description: 'Implement dark mode toggle using CSS variables and Zustand theme state.',
-    assignees: ['2'], listId: 'list-5', boardId: 'board-2', createdAt: '2025-02-09T14:00:00Z',
-    order: 1, priority: 'low', tags: ['ui', 'theme'], status: 'active',
-  },
-  {
-    id: 'task-11', title: 'Fix drag-and-drop bug', description: 'Tasks sometimes snap back after dropping in a different list.',
-    assignees: ['1'], listId: 'list-6', boardId: 'board-2', createdAt: '2025-02-12T10:00:00Z',
-    order: 0, priority: 'high', tags: ['bug', 'dnd'], status: 'active',
-  },
-  {
-    id: 'task-12', title: 'Implement search', description: 'Add global search across boards and tasks with highlighting.',
-    assignees: ['1', '2'], listId: 'list-6', boardId: 'board-2', createdAt: '2025-02-11T11:00:00Z',
-    order: 1, priority: 'medium', tags: ['search', 'feature'], status: 'active',
-  },
-  {
-    id: 'task-13', title: 'Responsive sidebar', description: 'Make sidebar collapsible and mobile-friendly.',
-    assignees: ['2'], listId: 'list-7', boardId: 'board-2', createdAt: '2025-02-06T09:00:00Z',
-    order: 0, priority: 'low', tags: ['ui', 'responsive'], status: 'completed',
-  },
-];
-
-const mockActivities: Activity[] = [
-  { id: 'act-1', type: 'task_created', message: 'created "Design landing page mockup"', userId: '2', boardId: 'board-1', timestamp: '2025-02-14T15:00:00Z' },
-  { id: 'act-2', type: 'task_moved', message: 'moved "Implement user authentication" to In Progress', userId: '1', boardId: 'board-1', timestamp: '2025-02-14T14:30:00Z' },
-  { id: 'act-3', type: 'task_assigned', message: 'assigned "Build notification system" to Sarah', userId: '4', boardId: 'board-1', timestamp: '2025-02-14T13:00:00Z' },
-  { id: 'act-4', type: 'task_updated', message: 'updated "Review PR: Dashboard redesign"', userId: '2', boardId: 'board-1', timestamp: '2025-02-14T12:00:00Z' },
-  { id: 'act-5', type: 'user_joined', message: 'joined the board', userId: '3', boardId: 'board-1', timestamp: '2025-02-14T10:00:00Z' },
-];
-
-const mockNotifications: Notification[] = [
-  { id: 'n1', title: 'Task assigned', message: 'You were assigned to "Write API documentation"', read: false, timestamp: '2025-02-14T15:00:00Z', type: 'task_assigned' },
-  { id: 'n2', title: 'Due date approaching', message: '"Set up CI/CD pipeline" is due tomorrow', read: false, timestamp: '2025-02-14T12:00:00Z', type: 'task_due' },
-  { id: 'n3', title: 'New comment', message: 'Alex commented on "Design landing page mockup"', read: true, timestamp: '2025-02-13T16:00:00Z', type: 'mention' },
-];
-
 // ── Helper to generate IDs ────────────────────────────────────────────
 let idCounter = 100;
 function generateId(prefix: string) {
@@ -244,6 +106,12 @@ interface AppState {
   isActivityPanelOpen: boolean;
   isSidebarCollapsed: boolean;
   isSettingsOpen: boolean;
+
+  // Task Creation state
+  isCreateTaskModalOpen: boolean;
+  createTaskTargetListId: string | null;
+  createTaskTargetBoardId: string | null;
+
   theme: 'light' | 'dark';
 
   // Data
@@ -272,6 +140,10 @@ interface AppState {
 
   // Editing states
   editingUsers: { [taskId: string]: string[] };
+  lastFetchAttempts: { [boardId: string]: number };
+  lastBoardsFetch: number;
+  lastUsersFetch: number;
+  lastAuthCheck: number;
 
   // Auth Actions
   login: (email: string, password: string) => Promise<boolean>;
@@ -290,6 +162,8 @@ interface AppState {
   setSearchQuery: (query: string) => void;
   setBoardSortBy: (sortBy: 'lastUpdated' | 'alphabetical') => void;
   setBoardFilters: (filters: Partial<BoardFilters>) => void;
+  openCreateTaskModal: (boardId: string, listId: string) => void;
+  closeCreateTaskModal: () => void;
 
   // Board actions
   fetchBoards: (page?: number) => Promise<void>;
@@ -308,7 +182,7 @@ interface AppState {
   reorderLists: (boardId: string, listIds: string[]) => void;
 
   // Task actions
-  createTask: (listId: string, boardId: string, title: string) => void;
+  createTask: (listId: string, boardId: string, title: string, extraData?: Partial<Task>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   moveTask: (taskId: string, fromListId: string, toListId: string, newOrder: number) => void;
   deleteTask: (id: string) => void;
@@ -327,6 +201,19 @@ interface AppState {
   // Real-time indicators
   setUserEditing: (taskId: string, userId: string) => void;
   removeUserEditing: (taskId: string, userId: string) => void;
+
+  // Real-time update actions (received from socket)
+  onTaskCreated: (task: any) => void;
+  onTaskUpdated: (task: any) => void;
+  onTaskDeleted: (taskId: string, listId: string) => void;
+  onTaskMoved: (taskId: string, oldListId: string, newListId: string, newPosition: number, task: any) => void;
+  onTaskAssigned: (taskId: string, userId: string, assignment: any) => void;
+  onTaskUnassigned: (taskId: string, userId: string) => void;
+  onListCreated: (list: any) => void;
+  onListUpdated: (list: any) => void;
+  onListDeleted: (listId: string) => void;
+  onBoardUpdated: (board: any) => void;
+  onBoardCreated: (board: any) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -339,6 +226,14 @@ export const useStore = create<AppState>((set, get) => ({
   isActivityPanelOpen: false,
   isSidebarCollapsed: typeof window !== 'undefined' ? window.innerWidth < 1024 : false,
   isSettingsOpen: false,
+  // Task Creation
+  isCreateTaskModalOpen: false,
+  createTaskTargetListId: null,
+  createTaskTargetBoardId: null,
+  lastFetchAttempts: {},
+  lastBoardsFetch: 0,
+  lastUsersFetch: 0,
+  lastAuthCheck: 0,
   theme: 'light',
 
   boards: [],
@@ -389,26 +284,9 @@ export const useStore = create<AppState>((set, get) => ({
 
       set({ isAuthenticated: true, currentUser: appUser });
       return true;
-    } catch {
-      const mockUser = mockUsers.find((u) => u.email === email);
-      if (mockUser) {
-        set({
-          isAuthenticated: true,
-          currentUser: mockUser,
-          users: mockUsers,
-          boards: mockBoards,
-          lists: mockLists,
-          tasks: mockTasks,
-          activities: mockActivities,
-          notifications: mockNotifications,
-          boardsTotal: mockBoards.length,
-        });
-        toast.success(`Welcome back, ${mockUser.name}!`);
-        return true;
-      }
-
-      // If API fails and not a mock user, propagate error
-      toast.error('Invalid email or password');
+    } catch (error: any) {
+      console.error('[useStore] Login failed:', error);
+      toast.error(error.message || 'Invalid email or password');
       return false;
     }
   },
@@ -438,33 +316,10 @@ export const useStore = create<AppState>((set, get) => ({
         users: [...get().users, appUser],
       });
       return true;
-    } catch {
-      // Fallback to mock signup
-      const demoUser: User = {
-        id: generateId('user'),
-        name,
-        email,
-        avatar: name
-          .split(' ')
-          .map((n: string) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2),
-        online: true,
-      };
-      set({
-        isAuthenticated: true,
-        currentUser: demoUser,
-        users: [...mockUsers, demoUser],
-        boards: mockBoards,
-        lists: mockLists,
-        tasks: mockTasks,
-        activities: mockActivities,
-        notifications: mockNotifications,
-        boardsTotal: mockBoards.length,
-      });
-      toast.success(`Welcome, ${name}! (Demo Mode)`);
-      return true;
+    } catch (error: any) {
+      console.error('[useStore] Signup failed:', error);
+      toast.error(error.message || 'Could not create account');
+      return false;
     }
   },
 
@@ -486,6 +341,12 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   checkAuth: async () => {
+    const now = Date.now();
+    if (now - get().lastAuthCheck < 5000) return;
+
+    console.log('[useStore] checkAuth() called');
+    set({ lastAuthCheck: now });
+
     const token = getToken();
     if (!token) return;
 
@@ -506,20 +367,36 @@ export const useStore = create<AppState>((set, get) => ({
         online: true,
       };
 
+      console.log(`[useStore] checkAuth success: ${appUser.email}`);
       set({ isAuthenticated: true, currentUser: appUser });
-    } catch {
+    } catch (error) {
+      console.log('[useStore] checkAuth failed, logging out');
+      // On error, logout
+      set({ isAuthenticated: false, currentUser: null });
       setToken(null);
     }
   },
 
   // ── View Actions ──────────────────────────────────────────────────
 
-  setCurrentView: (view) => set({ currentView: view }),
+  setCurrentView: (view) => {
+    const current = get().currentView;
+    if (current !== view) {
+      console.log(`[useStore] currentView changed: ${current} -> ${view}`);
+      set({ currentView: view });
+    }
+  },
 
   setSelectedBoardId: (id) => {
+    const current = get().selectedBoardId;
+    if (current === id) return;
+
+    console.log(`[useStore] selectedBoardId changed: ${current} -> ${id}`);
+    const nextView = id ? 'board' : 'dashboard';
+
     set({
       selectedBoardId: id,
-      currentView: id ? 'board' : 'dashboard'
+      currentView: nextView
     });
 
     if (id) {
@@ -557,32 +434,71 @@ export const useStore = create<AppState>((set, get) => ({
       boardFilters: { ...state.boardFilters, ...filters },
     })),
 
+  openCreateTaskModal: (boardId, listId) => set({
+    isCreateTaskModalOpen: true,
+    createTaskTargetBoardId: boardId,
+    createTaskTargetListId: listId
+  }),
+
+  closeCreateTaskModal: () => set({
+    isCreateTaskModalOpen: false,
+    createTaskTargetBoardId: null,
+    createTaskTargetListId: null
+  }),
+
   // ── Board Actions ─────────────────────────────────────────────────
 
   fetchBoards: async (page = 1) => {
-    set({ isLoadingBoards: true });
+    const now = Date.now();
+    if (get().isLoadingBoards || now - get().lastBoardsFetch < 5000) return;
+
+    console.log(`[useStore] fetchBoards(page=${page}) called`);
+    set({ isLoadingBoards: true, lastBoardsFetch: now });
     try {
       const response = await boardsApi.list(page);
       const boards: Board[] = (response.boards || []).map((b: any) => ({
         id: b.id || b._id,
         title: b.name || b.title,
-        color: b.color || '#6366f1',
-        createdAt: b.createdAt,
-        updatedAt: b.updatedAt,
-        memberIds: b.members?.map((m: any) => (m.user?.id || m.user?._id || m.userId || m)) || [],
-        taskCount: b.taskCount || 0,
         description: b.description || '',
+        color: b.color || '#6366f1',
+        createdAt: b.createdAt || b.updatedAt,
+        updatedAt: b.updatedAt || b.createdAt,
+        ownerId: b.ownerId,
+        owner: b.owner,
+        memberIds: (b.members || []).map((m: any) => m.userId || m.id || m),
+        taskCount: b.taskCount || 0,
+        lists: (b.lists || []).length,
       }));
       set({ boards, boardsPage: page, boardsTotal: response.total || boards.length });
-    } catch {
-      // In mock mode, boards are already loaded on login — nothing to do
+    } catch (error) {
+      console.error('[useStore] fetchBoards failed:', error);
     } finally {
       set({ isLoadingBoards: false });
     }
   },
 
   fetchBoard: async (id: string) => {
-    set({ isLoadingBoard: true });
+    // Guard: Don't fetch if already loading THIS board
+    const state = get();
+    const now = Date.now();
+    const lastAttempt = state.lastFetchAttempts[id] || 0;
+
+    if (state.isLoadingBoard && state.selectedBoardId === id) {
+      return;
+    }
+
+    // Skip if fetched very recently (within 5 seconds)
+    if (now - lastAttempt < 5000) {
+      return;
+    }
+
+    console.log(`[useStore] fetchBoard(${id}) called at ${new Date().toISOString()}`);
+    // console.trace('fetchBoard trace:'); // Uncomment if needed for deep debugging
+
+    set((state) => ({
+      isLoadingBoard: true,
+      lastFetchAttempts: { ...state.lastFetchAttempts, [id]: now }
+    }));
     try {
       const boardData = await boardsApi.get(id);
       const board = boardData.board || boardData;
@@ -590,12 +506,15 @@ export const useStore = create<AppState>((set, get) => ({
       const mappedBoard: Board = {
         id: board.id || board._id,
         title: board.name || board.title,
+        description: board.description || '',
         color: board.color || '#6366f1',
+        ownerId: board.ownerId,
+        owner: board.owner,
         createdAt: board.createdAt,
         updatedAt: board.updatedAt,
         memberIds: board.members?.map((m: any) => (m.user?.id || m.user?._id || m.userId || m)) || [],
         taskCount: board.taskCount || 0,
-        description: board.description || '',
+        lists: (board.lists || []).length,
       };
 
       set((state) => ({
@@ -624,7 +543,9 @@ export const useStore = create<AppState>((set, get) => ({
               id: t.id || t._id,
               title: t.title,
               description: t.description || '',
-              assignees: (t.assignments || t.assignees || []).map((a: any) => a.userId || a.user?.id || a.user?._id || a.id || a),
+              assignees: (t.assignments || t.assignees || []).map((a: any) =>
+                typeof a === 'string' ? a : (a.userId || a.user?.id || a.user?._id || a.id)
+              ),
               dueDate: t.dueDate,
               listId: l.id || l._id,
               boardId: id,
@@ -633,6 +554,7 @@ export const useStore = create<AppState>((set, get) => ({
               priority: t.priority || 'medium',
               tags: t.tags || [],
               status: t.status || 'active',
+              creatorId: t.createdById || t.createdBy?.id || t.createdBy,
               comments: t.comments || [],
             });
           }
@@ -687,48 +609,43 @@ export const useStore = create<AppState>((set, get) => ({
       }
 
       get().fetchActivities(id);
-    } catch {
-      // In mock mode, data is already loaded — no action needed
+    } catch (error) {
+      console.error('[useStore] fetchBoard failed:', error);
     } finally {
       set({ isLoadingBoard: false });
     }
   },
 
-  createBoard: (title, color, memberIds = []) => {
-    const newBoard: Board = {
-      id: generateId('board'),
-      title,
-      color,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      memberIds: [get().currentUser?.id || '1', ...memberIds],
-      taskCount: 0,
-    };
-    set((state) => ({ boards: [...state.boards, newBoard] }));
+  createBoard: async (title, color, memberIds = []) => {
+    try {
+      const response = await boardsApi.create({ name: title, description: '', color, memberIds });
+      const created = response.board || response;
+      const mappedBoard: Board = {
+        id: created.id || created._id,
+        title: created.name || created.title || title,
+        description: created.description || '',
+        color: created.color || color,
+        createdAt: created.createdAt || new Date().toISOString(),
+        updatedAt: created.updatedAt || new Date().toISOString(),
+        ownerId: created.ownerId || get().currentUser?.id || '',
+        memberIds: (created.members || []).map((m: any) => m.userId || m.id || m),
+        taskCount: 0,
+        lists: 0,
+      };
 
-    // Try API, ignore failure in mock mode
-    boardsApi.create({ name: title, description: '', color, memberIds })
-      .then((response) => {
-        const created = response.board || response;
-        if (created.id || created._id) {
-          set((state) => ({
-            boards: state.boards.map((b) =>
-              b.id === newBoard.id
-                ? { ...b, id: created.id || created._id }
-                : b
-            ),
-          }));
-        }
-      })
-      .catch(() => { });
+      // set((state) => ({ boards: [...state.boards, mappedBoard] }));
 
-    get().addActivity({
-      type: 'task_created',
-      message: `created board "${title}"`,
-      userId: get().currentUser?.id || '1',
-      boardId: newBoard.id,
-    });
-    toast.success(`Board "${title}" created!`);
+      get().addActivity({
+        type: 'task_created',
+        message: `created board "${title}"`,
+        userId: get().currentUser?.id || '',
+        boardId: mappedBoard.id,
+      });
+      toast.success(`Board "${title}" created!`);
+    } catch (error: any) {
+      console.error('[useStore] createBoard failed:', error);
+      toast.error(error.message || 'Failed to create board');
+    }
   },
 
   deleteBoard: (id) => {
@@ -761,6 +678,11 @@ export const useStore = create<AppState>((set, get) => ({
   // ── List Actions ──────────────────────────────────────────────────
 
   createList: (boardId, title) => {
+    // Prevent creating lists on temporary boards until they are fully synced
+    if (boardId.startsWith('board-') && boardId.includes('-', 6)) {
+      toast.error('Please wait for the board to finish creating...');
+      return;
+    }
     const lists = get().lists.filter((l) => l.boardId === boardId);
     const newList: List = {
       id: generateId('list'),
@@ -769,7 +691,6 @@ export const useStore = create<AppState>((set, get) => ({
       order: lists.length,
       taskIds: [],
     };
-    set((state) => ({ lists: [...state.lists, newList] }));
 
     listsApi.create(boardId, { name: title, position: newList.order })
       .then((response) => {
@@ -830,22 +751,23 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── Task Actions ──────────────────────────────────────────────────
 
-  createTask: (listId, boardId, title) => {
+  createTask: (listId, boardId, title, extraData = {}) => {
     const list = get().lists.find((l) => l.id === listId);
     const position = list?.taskIds.length || 0;
 
     const newTask: Task = {
       id: generateId('task'),
       title,
-      description: '',
-      assignees: [],
+      description: extraData.description || '',
+      assignees: extraData.assignees || [],
       listId,
       boardId,
       createdAt: new Date().toISOString(),
       order: position,
-      priority: 'medium',
-      tags: [],
+      priority: extraData.priority || 'medium',
+      tags: extraData.tags || [],
       status: 'active',
+      creatorId: get().currentUser?.id || '1',
       comments: [],
     };
 
@@ -856,25 +778,75 @@ export const useStore = create<AppState>((set, get) => ({
       ),
     }));
 
-    tasksApi.create(listId, { title, position })
-      .then((response) => {
+    const apiData = {
+      title,
+      description: extraData.description,
+      position,
+      cid: newTask.id,
+      priority: extraData.priority,
+      dueDate: extraData.dueDate,
+    };
+
+    tasksApi.create(listId, apiData)
+      .then(async (response) => {
         const created = response.task || response;
         if (created.id || created._id) {
           const realId = created.id || created._id;
-          const mappedAssignees = (created.assignments || created.assignees || []).map((a: any) => a.userId || a.user?.id || a.user?._id || a.id || a);
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
-              t.id === newTask.id ? { ...t, id: realId, assignees: mappedAssignees } : t
-            ),
-            lists: state.lists.map((l) =>
-              l.id === listId
-                ? { ...l, taskIds: l.taskIds.map((tid) => tid === newTask.id ? realId : tid) }
-                : l
-            ),
-          }));
+
+          // Assign users to the task on the backend
+          const assignees = extraData.assignees || [];
+          for (const userId of assignees) {
+            try {
+              await tasksApi.assign(realId, userId);
+            } catch (err) {
+              console.error(`[useStore] Failed to assign user ${userId} to task ${realId}:`, err);
+            }
+          }
+
+          // Re-fetch the task to get the full assignments from the backend
+          let mappedAssignees = assignees;
+          try {
+            const taskResponse = await tasksApi.get(realId);
+            const fullTask = taskResponse.task || taskResponse;
+            mappedAssignees = (fullTask.assignments || fullTask.assignees || []).map((a: any) =>
+              typeof a === 'string' ? a : (a.userId || a.user?.id || a.user?._id || a.id)
+            );
+          } catch {
+            // Fall back to original assignees array
+          }
+
+          set((state) => {
+            // Defensive: Check if realId already exists (e.g. from socket)
+            if (state.tasks.some(t => t.id === realId)) {
+              // Duplicate real task already exists, just remove the optimistic one
+              return {
+                tasks: state.tasks.filter((t) => t.id !== newTask.id),
+                lists: state.lists.map((l) =>
+                  l.id === listId
+                    ? { ...l, taskIds: l.taskIds.filter((tid) => tid !== newTask.id) }
+                    : l
+                ),
+              };
+            }
+
+            // Otherwise, update the optimistic task
+            return {
+              tasks: state.tasks.map((t) =>
+                t.id === newTask.id
+                  ? { ...t, id: realId, assignees: mappedAssignees, creatorId: created.createdById || created.createdBy?.id || created.createdBy }
+                  : t
+              ),
+              lists: state.lists.map((l) =>
+                l.id === listId
+                  ? { ...l, taskIds: l.taskIds.map((tid) => tid === newTask.id ? realId : tid) }
+                  : l
+              ),
+            };
+          });
         }
       })
       .catch(() => { });
+
 
     get().addActivity({
       type: 'task_created',
@@ -1068,7 +1040,209 @@ export const useStore = create<AppState>((set, get) => ({
     }));
   },
 
+  onTaskCreated: (data) => {
+    const t = data.task || data;
+    const cid = data.cid; // Correctly get cid from data
+
+    const newTask: Task = {
+      id: t.id || t._id,
+      title: t.title,
+      description: t.description || '',
+      assignees: (t.assignments || t.assignees || []).map((a: any) =>
+        typeof a === 'string' ? a : (a.userId || a.user?.id || a.user?._id || a.id)
+      ),
+      dueDate: t.dueDate,
+      listId: t.listId,
+      boardId: t.boardId || t.list?.boardId || (get().lists.find(l => l.id === t.listId)?.boardId || ''),
+      createdAt: t.createdAt,
+      order: t.position ?? t.order ?? 0,
+      priority: t.priority as Priority,
+      tags: t.tags || [],
+      status: t.status as TaskStatus,
+      creatorId: t.createdById || t.createdBy?.id || t.createdBy,
+      comments: (t.comments || []).map((c: any) => ({
+        id: c.id || c._id,
+        taskId: c.taskId || t.id || t._id,
+        userId: c.userId || c.user?.id || c.user?._id,
+        content: c.content,
+        createdAt: c.createdAt,
+      })),
+    };
+
+    set((state) => {
+      // Deduplicate: if a task with this ID already exists, don't add it again
+      if (state.tasks.some(task => task.id === newTask.id)) return state;
+
+      // If a task with the client-side ID (cid) exists, replace it with the new task
+      const existingTaskIndex = state.tasks.findIndex(task => task.id === cid);
+      if (existingTaskIndex !== -1) {
+        const updatedTasks = [...state.tasks];
+        const oldId = updatedTasks[existingTaskIndex].id;
+        updatedTasks[existingTaskIndex] = newTask;
+
+        return {
+          tasks: updatedTasks,
+          lists: state.lists.map((l) =>
+            l.id === newTask.listId
+              ? { ...l, taskIds: l.taskIds.map((tid) => tid === oldId ? newTask.id : tid) }
+              : l
+          ),
+        };
+      }
+
+      // Otherwise, add the new task
+      return {
+        tasks: [...state.tasks, newTask],
+        lists: state.lists.map((l) =>
+          l.id === newTask.listId ? { ...l, taskIds: [...l.taskIds, newTask.id] } : l
+        ),
+      };
+    });
+  },
+
+  onTaskUpdated: (data) => {
+    const t = data.task || data;
+    const taskId = t.id || t._id;
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task.id === taskId
+          ? {
+            ...task,
+            ...t,
+            id: taskId,
+            assignees: (t.assignments || t.assignees || []).map((a: any) =>
+              typeof a === 'string' ? a : (a.userId || a.user?.id || a.user?._id || a.id)
+            ),
+            creatorId: t.createdById || t.createdBy?.id || t.createdBy || task.creatorId,
+          }
+          : task
+      ),
+    }));
+  },
+
+  onTaskDeleted: (taskId, listId) => {
+    set((state) => ({
+      tasks: state.tasks.filter((t) => t.id !== taskId),
+      lists: state.lists.map((l) =>
+        l.id === listId ? { ...l, taskIds: l.taskIds.filter((id) => id !== taskId) } : l
+      ),
+    }));
+  },
+
+  onTaskMoved: (taskId, oldListId, newListId, newPosition, data) => {
+    const t = data.task || data;
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task.id === taskId ? { ...task, listId: newListId, order: newPosition, ...t } : task
+      ),
+      lists: state.lists.map((l) => {
+        if (l.id === oldListId) {
+          return { ...l, taskIds: l.taskIds.filter((id) => id !== taskId) };
+        }
+        if (l.id === newListId) {
+          const newTaskIds = l.taskIds.filter((id) => id !== taskId);
+          newTaskIds.splice(newPosition, 0, taskId);
+          return { ...l, taskIds: newTaskIds };
+        }
+        return l;
+      }),
+    }));
+  },
+
+  onTaskAssigned: (taskId, userId, _assignment) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, assignees: Array.from(new Set([...(t.assignees || []), userId])) }
+          : t
+      ),
+    }));
+  },
+
+  onTaskUnassigned: (taskId, userId) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, assignees: (t.assignees || []).filter((id) => id !== userId) }
+          : t
+      ),
+    }));
+  },
+
+  onListCreated: (data) => {
+    const l = data.list || data;
+    const newList: List = {
+      id: l.id || l._id,
+      title: l.title || l.name,
+      boardId: l.boardId,
+      order: l.position ?? l.order ?? 0,
+      taskIds: (l.tasks || []).map((t: any) => t.id || t._id),
+    };
+    set((state) => {
+      if (state.lists.some(list => list.id === newList.id)) return state;
+      return {
+        lists: [...state.lists, newList].sort((a, b) => a.order - b.order),
+      };
+    });
+  },
+
+  onListUpdated: (data) => {
+    const l = data.list || data;
+    const listId = l.id || l._id;
+    set((state) => ({
+      lists: state.lists.map((list) =>
+        list.id === listId ? { ...list, ...l, id: listId, title: l.title || l.name || list.title } : list
+      ).sort((a, b) => a.order - b.order),
+    }));
+  },
+
+  onListDeleted: (listId) => {
+    set((state) => ({
+      lists: state.lists.filter((l) => l.id !== listId),
+      tasks: state.tasks.filter((t) => t.listId !== listId),
+    }));
+  },
+
+  onBoardUpdated: (data) => {
+    const b = data.board || data;
+    const boardId = b.id || b._id;
+    set((state) => ({
+      boards: state.boards.map((board) =>
+        board.id === boardId ? { ...board, ...b, id: boardId, title: b.title || b.name || board.title } : board
+      ),
+    }));
+  },
+
+  onBoardCreated: (data) => {
+    const b = data.board || data;
+    const boardId = b.id || b._id;
+    const newBoard: Board = {
+      id: boardId,
+      title: b.name || b.title,
+      description: b.description || '',
+      color: b.color || '#6366f1',
+      memberIds: (b.members || []).map((m: any) => m.userId || m.id),
+      ownerId: b.ownerId,
+      createdAt: b.createdAt || b.updatedAt || new Date().toISOString(),
+      updatedAt: b.updatedAt || b.createdAt || new Date().toISOString(),
+      taskCount: b.taskCount || 0,
+      lists: (b.lists || []).length,
+    };
+
+    set((state) => {
+      if (state.boards.some((board) => board.id === boardId)) return state;
+      return {
+        boards: [newBoard, ...state.boards],
+      };
+    });
+  },
+
   fetchUsers: async () => {
+    const now = Date.now();
+    if (now - get().lastUsersFetch < 5000) return;
+
+    console.log('[useStore] fetchUsers() called');
+    set({ lastUsersFetch: now });
     try {
       const response = await authApi.getUsers();
       const apiUsers = response.users || [];

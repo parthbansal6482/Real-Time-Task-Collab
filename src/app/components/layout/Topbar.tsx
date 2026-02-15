@@ -115,14 +115,6 @@ export function Topbar() {
           </TooltipProvider>
         )}
 
-        {/* Invite (board view only) */}
-        {currentView === 'board' && (
-          <Button variant="outline" size="sm" className="hidden sm:flex text-xs">
-            <UserPlus className="w-3 h-3 mr-1" />
-            Invite
-          </Button>
-        )}
-
         {/* Notification Menu */}
         <NotificationMenu />
 

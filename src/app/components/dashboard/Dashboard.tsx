@@ -114,9 +114,9 @@ export function Dashboard() {
     if (!newBoardTitle.trim()) return;
     setIsCreating(true);
     createBoard(newBoardTitle.trim(), newBoardColor, selectedMemberIds);
-    setNewBoardTitle('');
-    setNewBoardColor(BOARD_COLORS[0].value);
-    setSelectedMemberIds([]);
+    // setNewBoardTitle('');
+    // setNewBoardColor(BOARD_COLORS[0].value);
+    // setSelectedMemberIds([]);
     setIsCreateOpen(false);
     setIsCreating(false);
   };
@@ -236,7 +236,7 @@ export function Dashboard() {
                 >
                   {/* Color Banner */}
                   <div
-                    className="h-2 w-full"
+                    className="h-4 w-full"
                     style={{ backgroundColor: board.color }}
                   />
 

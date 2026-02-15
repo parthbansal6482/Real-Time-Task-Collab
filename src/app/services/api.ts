@@ -157,7 +157,14 @@ export const tasksApi = {
 
     create: (
         listId: string,
-        data: { title: string; description?: string; position: number }
+        data: {
+            title: string;
+            description?: string;
+            position: number;
+            cid?: string;
+            priority?: string;
+            dueDate?: string;
+        }
     ) => post<any>(`/lists/${listId}/tasks`, data),
 
     update: (

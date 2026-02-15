@@ -37,20 +37,37 @@ interface DragItem {
 }
 
 export function KanbanList({ list, index, moveList }: KanbanListProps) {
-  const { tasks, boardFilters, createTask, moveTask, updateListTitle, deleteList } = useStore();
+  const {
+    tasks,
+    boardFilters,
+    createTask,
+    moveTask,
+    updateListTitle,
+    deleteList,
+    currentUser,
+    boards,
+    openCreateTaskModal
+  } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(list.title);
-  const [isAddingTask, setIsAddingTask] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const taskInputRef = useRef<HTMLInputElement>(null);
 
-  // List tasks filtered by search, priority, and assignee, then sorted by order
+  // List tasks filtered by search, priority, assignee, and visibility permissions
   const listTasks = tasks
     .filter((t) => {
       if (t.listId !== list.id) return false;
 
+      // ── Visibility check ──
+      const board = boards.find(b => b.id === list.boardId);
+
+      const isOwner = board?.ownerId === currentUser?.id;
+      const isCreator = t.creatorId === currentUser?.id;
+      const isAssignee = t.assignees.includes(currentUser?.id || '');
+
+      if (!isOwner && !isCreator && !isAssignee) return false;
+
+      // ── Filters ──
       const matchesSearch = !boardFilters.search ||
         t.title.toLowerCase().includes(boardFilters.search.toLowerCase()) ||
         t.description?.toLowerCase().includes(boardFilters.search.toLowerCase());
@@ -116,24 +133,6 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSaveTitle();
     if (e.key === 'Escape') setIsEditing(false);
-  };
-
-  // ── Add Task ────────────────────────────────────────────────────
-
-  const handleAddTask = () => {
-    if (newTaskTitle.trim()) {
-      createTask(list.id, list.boardId, newTaskTitle.trim());
-      setNewTaskTitle('');
-      setIsAddingTask(false);
-    }
-  };
-
-  const handleTaskKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleAddTask();
-    if (e.key === 'Escape') {
-      setIsAddingTask(false);
-      setNewTaskTitle('');
-    }
   };
 
   // ── Delete List ─────────────────────────────────────────────────
@@ -240,74 +239,24 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
           </AnimatePresence>
 
           {/* Empty state */}
-          {listTasks.length === 0 && !isAddingTask && (
+          {listTasks.length === 0 && (
             <div className="text-center py-6">
               <p className="text-xs text-gray-400">No tasks yet</p>
             </div>
           )}
-
-          {/* Add Task Inline */}
-          {isAddingTask && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-2"
-            >
-              <Input
-                ref={taskInputRef}
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                onKeyDown={handleTaskKeyDown}
-                onBlur={() => {
-                  if (!newTaskTitle.trim()) {
-                    setIsAddingTask(false);
-                  }
-                }}
-                placeholder="Enter a task title..."
-                className="text-sm"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleAddTask}
-                  disabled={!newTaskTitle.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-xs"
-                >
-                  Add
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsAddingTask(false);
-                    setNewTaskTitle('');
-                  }}
-                  className="text-xs"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </motion.div>
-          )}
         </div>
 
         {/* Add Task Button */}
-        {!isAddingTask && (
-          <div className="p-2 border-t border-gray-100">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsAddingTask(true);
-                setTimeout(() => taskInputRef.current?.focus(), 50);
-              }}
-              className="w-full justify-start text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50/50 h-8"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add task
-            </Button>
-          </div>
-        )}
+        <div className="p-2 border-t border-gray-100">
+          <Button
+            variant="ghost"
+            onClick={() => openCreateTaskModal(list.boardId, list.id)}
+            className="w-full justify-start text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50/50 h-8"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add task
+          </Button>
+        </div>
       </div>
 
       {/* Delete List Confirmation Dialog */}

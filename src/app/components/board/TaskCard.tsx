@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore, Task, User } from '../../store/useStore';
 import { useDrag } from 'react-dnd';
 import { Badge } from '../ui/badge';
@@ -16,6 +16,8 @@ import { formatDistanceToNow, isPast, parseISO } from 'date-fns';
 import { motion } from 'motion/react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { getSocket } from '../../services/socket';
+import { SOCKET_EVENTS } from '../../services/socketEvents';
 
 interface TaskCardProps {
   task: Task;
@@ -38,6 +40,19 @@ export function TaskCard({ task }: TaskCardProps) {
   // ── Computed Values ─────────────────────────────────────────────
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+
+  // Sync editing status to other users
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !isEditingTitle) return;
+
+    socket.emit(SOCKET_EVENTS.USER_EDITING, { taskId: task.id, boardId: task.boardId });
+
+    return () => {
+      socket.emit(SOCKET_EVENTS.USER_STOPPED_EDITING, { taskId: task.id, boardId: task.boardId });
+    };
+  }, [isEditingTitle, task.id, task.boardId]);
+
   const [editTitle, setEditTitle] = useState(task.title);
   const titleInputRef = useRef<HTMLInputElement>(null);
 

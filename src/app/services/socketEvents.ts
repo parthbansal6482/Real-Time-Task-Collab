@@ -1,6 +1,5 @@
 /**
- * Socket.io event name constants — used by both server handlers and controllers.
- * Keeping event names centralised prevents typos and makes refactoring easier.
+ * Socket.io event name constants — matches the backend events.
  */
 export const SOCKET_EVENTS = {
     // Connection

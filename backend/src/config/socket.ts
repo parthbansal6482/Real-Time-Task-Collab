@@ -62,6 +62,7 @@ export function initSocket(httpServer: HttpServer): IOServer {
         const username = (socket as any).username as string;
 
         console.log(`🔌 Socket connected: ${username} (${socket.id})`);
+        socket.join(`user:${userId}`);
 
         registerBoardHandlers(socket, userId, username);
         registerTaskHandlers(socket, userId, username);
