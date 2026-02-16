@@ -100,6 +100,12 @@ export const authApi = {
     me: () => get<{ user: any }>('/auth/me'),
 
     getUsers: () => get<{ users: any[] }>('/auth/users'),
+
+    updateProfile: (data: { username: string }) =>
+        put<{ user: any }>('/auth/profile', data),
+
+    updatePassword: (data: { currentPassword: string; newPassword: string }) =>
+        put<void>('/auth/password', data),
 };
 
 // ── Boards API ────────────────────────────────────────────────────────
@@ -179,6 +185,9 @@ export const tasksApi = {
 
     delete: (id: string) => del<void>(`/tasks/${id}`),
 
+    move: (taskId: string, listId: string, position: number) =>
+        put<any>(`/tasks/${taskId}/move`, { listId, position }),
+
     assign: (taskId: string, userId: string) =>
         post<any>(`/tasks/${taskId}/assign`, { userId }),
 
@@ -193,6 +202,16 @@ export const activitiesApi = {
         get<{ activities: any[]; total: number }>(
             `/boards/${boardId}/activities?page=${page}&limit=${limit}`
         ),
+};
+
+// ── Comments API ──────────────────────────────────────────────────────
+
+export const commentsApi = {
+    getByTask: (taskId: string) =>
+        get<{ comments: any[] }>(`/tasks/${taskId}/comments`),
+
+    create: (taskId: string, content: string) =>
+        post<{ comment: any }>(`/tasks/${taskId}/comments`, { content }),
 };
 
 // ── Search API ────────────────────────────────────────────────────────

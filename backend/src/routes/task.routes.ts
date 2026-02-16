@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as taskController from '../controllers/task.controller';
+import * as commentController from '../controllers/comment.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 import { requireBoardAccess } from '../middlewares/boardAccess.middleware';
 import { validateBody, validateParams } from '../middlewares/validation.middleware';
@@ -8,6 +9,7 @@ import {
     updateTaskSchema,
     moveTaskSchema,
     assignTaskSchema,
+    createCommentSchema,
     listIdParamSchema,
     taskIdParamSchema,
 } from '../utils/validators';
@@ -76,6 +78,22 @@ router.delete(
     validateParams(taskIdParamSchema),
     requireBoardAccess(),
     taskController.unassignUser
+);
+
+// Comment routes
+router.get(
+    '/tasks/:taskId/comments',
+    validateParams(taskIdParamSchema),
+    requireBoardAccess(),
+    commentController.getComments
+);
+
+router.post(
+    '/tasks/:taskId/comments',
+    validateParams(taskIdParamSchema),
+    requireBoardAccess(),
+    validateBody(createCommentSchema),
+    commentController.createComment
 );
 
 export default router;

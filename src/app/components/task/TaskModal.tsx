@@ -115,11 +115,13 @@ export function TaskModal() {
 
   if (!task) return null;
 
+  const currentBoard = boards.find((b) => b.id === task.boardId);
+  const isCreator = currentUser?.id === task.creatorId;
+  const isOwner = currentUser?.id === currentBoard?.ownerId;
+  const canEdit = isCreator || isOwner;
   const assigneeUsers = editAssignees
     .map((id) => users.find((u) => u.id === id))
     .filter(Boolean) as User[];
-
-  const currentBoard = boards.find((b) => b.id === task.boardId);
   const availableUsers = users.filter((u) => {
     // Only show users who are members of the board AND not already assigned to the task
     const isMember = currentBoard?.memberIds.includes(u.id);
@@ -247,19 +249,26 @@ export function TaskModal() {
                     onClick={() => updateTask(task.id, {
                       status: task.status === 'completed' ? 'active' : 'completed'
                     })}
-                    className="mt-1 flex-shrink-0"
+                    disabled={!isCreator}
+                    className={`mt-1 flex-shrink-0 ${!isCreator ? 'cursor-default' : ''}`}
                   >
                     <CheckCircle2
                       className={`w-5 h-5 transition-colors ${task.status === 'completed' ? 'text-green-500' : 'text-gray-300 hover:text-indigo-400'
-                        }`}
+                        } ${!isCreator && task.status !== 'completed' ? 'opacity-50' : ''}`}
                     />
                   </button>
                   <Input
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
+                    disabled={!isCreator}
                     className={`text-lg font-semibold border-none p-0 h-auto focus-visible:ring-0 ${task.status === 'completed' ? 'line-through text-gray-400' : ''
-                      }`}
+                      } ${!isCreator ? 'cursor-default' : ''}`}
                   />
+                  {!isCreator && (
+                    <Badge variant="outline" className="text-[10px] text-gray-400 border-gray-200 uppercase tracking-widest px-1.5 h-5">
+                      Read Only
+                    </Badge>
+                  )}
                 </div>
               </DialogHeader>
 
@@ -275,8 +284,9 @@ export function TaskModal() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleSetPriority(opt.value)}
+                      disabled={!isCreator}
                       className={`text-xs h-7 ${editPriority === opt.value ? opt.color : 'text-gray-500'
-                        }`}
+                        } ${!isCreator && editPriority !== opt.value ? 'opacity-50' : ''}`}
                     >
                       {opt.icon}
                       <span className="ml-1">{opt.label}</span>
@@ -298,12 +308,14 @@ export function TaskModal() {
                       className="text-xs pl-2 pr-1 py-0.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
                     >
                       {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-red-500 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      {isCreator && (
+                        <button
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
                     </Badge>
                   ))}
                   {isAddingTag ? (
@@ -324,7 +336,7 @@ export function TaskModal() {
                         autoFocus
                       />
                     </div>
-                  ) : (
+                  ) : isCreator ? (
                     <button
                       onClick={() => {
                         setIsAddingTag(true);
@@ -334,7 +346,7 @@ export function TaskModal() {
                     >
                       <Plus className="w-3 h-3" /> Add tag
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -346,10 +358,11 @@ export function TaskModal() {
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Add a description..."
-                  className="w-full min-h-[80px] p-3 text-sm border border-gray-200 rounded-lg
+                  readOnly={!canEdit}
+                  placeholder={canEdit ? "Add a description..." : "No description provided."}
+                  className={`w-full min-h-[80px] p-3 text-sm border border-gray-200 rounded-lg
                     resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                    transition-all bg-gray-50 hover:bg-white focus:bg-white"
+                    transition-all bg-gray-50 hover:bg-white focus:bg-white focus:outline-none ${!canEdit ? 'cursor-default opacity-80' : ''}`}
                   rows={3}
                 />
               </div>
@@ -367,7 +380,8 @@ export function TaskModal() {
                     type="date"
                     value={editDueDate}
                     onChange={(e) => handleSetDueDate(e.target.value)}
-                    className="text-sm h-9"
+                    disabled={!canEdit}
+                    className={`text-sm h-9 ${!canEdit ? 'cursor-default' : ''}`}
                   />
                 </div>
 
@@ -381,8 +395,8 @@ export function TaskModal() {
                       <Badge
                         key={user.id}
                         variant="secondary"
-                        className="cursor-pointer hover:bg-red-100 hover:text-red-700 transition-colors pl-1 pr-2"
-                        onClick={() => handleToggleAssignee(user.id)}
+                        className={`transition-colors pl-1 pr-2 ${canEdit ? 'cursor-pointer hover:bg-red-100 hover:text-red-700' : 'cursor-default'}`}
+                        onClick={() => canEdit && handleToggleAssignee(user.id)}
                       >
                         <Avatar className="w-4 h-4 mr-1">
                           <AvatarFallback className="text-[8px] bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
@@ -392,7 +406,7 @@ export function TaskModal() {
                         {user.name}
                       </Badge>
                     ))}
-                    {availableUsers.length > 0 && (
+                    {canEdit && availableUsers.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {availableUsers.slice(0, 5).map((user) => (
                           <button
@@ -455,9 +469,12 @@ export function TaskModal() {
                 </div>
 
                 {/* Comment List */}
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                   {(task.comments || []).slice().reverse().map((comment) => {
                     const commentUser = users.find((u) => u.id === comment.userId);
+                    const displayName = comment.userName || commentUser?.name || 'Unknown User';
+                    const displayAvatar = comment.userAvatar || commentUser?.avatar || (displayName !== 'Unknown User' ? displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?');
+
                     return (
                       <motion.div
                         key={comment.id}
@@ -467,14 +484,14 @@ export function TaskModal() {
                         className="flex gap-2 pl-2"
                       >
                         <Avatar className="w-6 h-6 flex-shrink-0 mt-0.5">
-                          <AvatarFallback className="text-[8px] bg-gray-200 text-gray-600">
-                            {commentUser?.avatar || '?'}
+                          <AvatarFallback className="text-[8px] bg-gray-100 text-gray-600 border border-gray-200">
+                            {displayAvatar}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-gray-700">
-                              {commentUser?.name || 'Unknown'}
+                              {displayName}
                             </span>
                             <span className="text-[10px] text-gray-400">
                               {formatDistanceToNow(parseISO(comment.createdAt), {
@@ -529,25 +546,31 @@ export function TaskModal() {
 
               {/* Save & Delete Buttons */}
               <div className="flex items-center justify-between pt-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 text-sm"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete task
-                </Button>
-                <Button
-                  onClick={handleSaveChanges}
-                  disabled={!hasChanges || isSaving}
-                  className={`text-sm transition-all ${hasChanges
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+                {canEdit ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 text-sm"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete task
+                  </Button>
+                ) : (
+                  <div />
+                )}
+                {canEdit && (
+                  <Button
+                    onClick={handleSaveChanges}
+                    disabled={!hasChanges || isSaving}
+                    className={`text-sm transition-all ${hasChanges
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                )}
               </div>
             </div>
           </ScrollArea>

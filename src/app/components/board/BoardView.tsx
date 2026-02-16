@@ -27,6 +27,7 @@ export function BoardView() {
     isLoadingBoard,
     boardFilters,
     setBoardFilters,
+    currentUser,
   } = useStore();
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
@@ -72,19 +73,21 @@ export function BoardView() {
     }
   };
 
+  const currentBoard = boards.find(b => b.id === selectedBoardId);
+  const isOwner = currentUser?.id === currentBoard?.ownerId;
+
   // Handle list reordering via drag-and-drop
   const moveList = useCallback(
     (dragIndex: number, hoverIndex: number) => {
-      if (!selectedBoardId) return;
+      if (!selectedBoardId || !isOwner) return;
       const newOrder = [...boardLists];
       const [removed] = newOrder.splice(dragIndex, 1);
       newOrder.splice(hoverIndex, 0, removed);
       reorderLists(selectedBoardId, newOrder.map((l) => l.id));
     },
-    [boardLists, selectedBoardId, reorderLists]
+    [boardLists, selectedBoardId, reorderLists, isOwner]
   );
 
-  const currentBoard = boards.find(b => b.id === selectedBoardId);
   const boardMembers = users.filter(u => currentBoard?.memberIds.includes(u.id));
 
   if (isLoadingBoard) {
@@ -213,59 +216,61 @@ export function BoardView() {
           ))}
         </AnimatePresence>
 
-        {/* Add List Button / Inline Input */}
-        <div className="flex-shrink-0 w-72">
-          {isAddingList ? (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-3"
-            >
-              <Input
-                ref={inputRef}
-                value={newListTitle}
-                onChange={(e) => setNewListTitle(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onBlur={() => {
-                  if (!newListTitle.trim()) {
-                    setIsAddingList(false);
-                  }
-                }}
-                placeholder="Enter list title..."
-                className="mb-2"
-              />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleAddList}
-                  disabled={!newListTitle.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  Add List
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsAddingList(false);
-                    setNewListTitle('');
+        {/* Add List Button / Inline Input (Owner only) */}
+        {isOwner && (
+          <div className="flex-shrink-0 w-72">
+            {isAddingList ? (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-3"
+              >
+                <Input
+                  ref={inputRef}
+                  value={newListTitle}
+                  onChange={(e) => setNewListTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={() => {
+                    if (!newListTitle.trim()) {
+                      setIsAddingList(false);
+                    }
                   }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </motion.div>
-          ) : (
-            <Button
-              variant="ghost"
-              onClick={() => setIsAddingList(true)}
-              className="w-full h-12 border-2 border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 rounded-xl transition-all duration-200"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add another list
-            </Button>
-          )}
-        </div>
+                  placeholder="Enter list title..."
+                  className="mb-2"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleAddList}
+                    disabled={!newListTitle.trim()}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Add List
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsAddingList(false);
+                      setNewListTitle('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={() => setIsAddingList(true)}
+                className="w-full h-12 border-2 border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 rounded-xl transition-all duration-200"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add another list
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

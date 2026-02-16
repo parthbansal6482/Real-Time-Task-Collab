@@ -47,3 +47,23 @@ export const getUsers = asyncHandler(async (req: AuthRequest, res: Response) => 
     const result = await authService.listUsers(userId);
     ApiResponse.success(res, result);
 });
+
+/**
+ * PUT /api/auth/profile
+ */
+export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.userId;
+    const { username } = req.body;
+    const result = await authService.updateProfile(userId, username);
+    ApiResponse.success(res, result, 'Profile updated successfully');
+});
+
+/**
+ * PUT /api/auth/password
+ */
+export const updatePassword = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.userId;
+    const { currentPassword, newPassword } = req.body;
+    await authService.updatePassword(userId, currentPassword, newPassword);
+    ApiResponse.success(res, {}, 'Password changed successfully');
+});

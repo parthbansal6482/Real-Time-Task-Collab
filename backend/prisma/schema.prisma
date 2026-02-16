@@ -21,6 +21,7 @@ model User {
   createdTasks    Task[]           @relation("TaskCreator")
   taskAssignments TaskAssignment[]
   activities      Activity[]
+  comments        Comment[]
 
   @@map("users")
 }
@@ -94,6 +95,7 @@ model Task {
   list        List             @relation(fields: [listId], references: [id], onDelete: Cascade)
   createdBy   User             @relation("TaskCreator", fields: [createdById], references: [id])
   assignments TaskAssignment[]
+  comments    Comment[]
 
   @@index([listId])
   @@index([createdById])
@@ -133,4 +135,19 @@ model Activity {
   @@index([boardId, createdAt])
   @@index([userId])
   @@map("activities")
+}
+
+/// Task comment — stored persistently and synced in real-time
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@map("comments")
 }

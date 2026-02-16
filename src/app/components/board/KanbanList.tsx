@@ -48,6 +48,10 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
     boards,
     openCreateTaskModal
   } = useStore();
+
+  const board = boards.find(b => b.id === list.boardId);
+  const isOwner = board?.ownerId === currentUser?.id;
+
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(list.title);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -59,9 +63,7 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
       if (t.listId !== list.id) return false;
 
       // ── Visibility check ──
-      const board = boards.find(b => b.id === list.boardId);
-
-      const isOwner = board?.ownerId === currentUser?.id;
+      // isOwner is already defined at the component level
       const isCreator = t.creatorId === currentUser?.id;
       const isAssignee = t.assignees.includes(currentUser?.id || '');
 
@@ -86,6 +88,7 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
   const [{ isDraggingList }, dragListRef, previewRef] = useDrag({
     type: 'LIST',
     item: { type: 'LIST', id: list.id, index },
+    canDrag: () => isOwner,
     collect: (monitor) => ({
       isDraggingList: monitor.isDragging(),
     }),
@@ -105,6 +108,7 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
 
   const [{ isOver }, dropTaskRef] = useDrop({
     accept: 'TASK',
+    canDrop: () => isOwner,
     drop: (item: DragItem) => {
       if (item.listId !== list.id) {
         moveTask(item.id, item.listId, list.id, listTasks.length);
@@ -118,12 +122,14 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
   // ── Title Editing ───────────────────────────────────────────────
 
   const handleStartEditing = () => {
+    if (!isOwner) return; // Only owner can edit
     setEditTitle(list.title);
     setIsEditing(true);
     setTimeout(() => titleInputRef.current?.focus(), 50);
   };
 
   const handleSaveTitle = () => {
+    if (!isOwner) return; // Only owner can save
     if (editTitle.trim() && editTitle.trim() !== list.title) {
       updateListTitle(list.id, editTitle.trim());
     }
@@ -131,6 +137,7 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOwner) return; // Only owner can interact
     if (e.key === 'Enter') handleSaveTitle();
     if (e.key === 'Escape') setIsEditing(false);
   };
@@ -138,6 +145,7 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
   // ── Delete List ─────────────────────────────────────────────────
 
   const handleDeleteList = () => {
+    if (!isOwner) return; // Only owner can delete
     deleteList(list.id);
     setShowDeleteDialog(false);
   };
@@ -169,8 +177,8 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
           <div className="flex items-center gap-1 flex-1 min-w-0">
             {/* Drag handle */}
             <div
-              ref={dragListRef as any}
-              className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-gray-200 transition-colors"
+              ref={isOwner ? (dragListRef as any) : null}
+              className={`${isOwner ? 'cursor-grab active:cursor-grabbing' : 'opacity-20 cursor-default'} p-1 rounded hover:bg-gray-200 transition-colors`}
             >
               <GripVertical className="w-4 h-4 text-gray-400" />
             </div>
@@ -186,8 +194,8 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
               />
             ) : (
               <h3
-                className="text-sm font-semibold text-gray-700 truncate cursor-pointer hover:text-gray-900"
-                onDoubleClick={handleStartEditing}
+                className={`text-sm font-semibold text-gray-700 truncate ${isOwner ? 'cursor-pointer hover:text-gray-900' : ''}`}
+                onDoubleClick={() => isOwner && handleStartEditing()}
               >
                 {list.title}
               </h3>
@@ -205,19 +213,21 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
                 <MoreVertical className="w-4 h-4 text-gray-400" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={handleStartEditing}>
-                <Pencil className="w-4 h-4 mr-2" />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete list
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+            {isOwner && (
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={handleStartEditing}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete list
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            )}
           </DropdownMenu>
         </div>
 
@@ -246,17 +256,19 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
           )}
         </div>
 
-        {/* Add Task Button */}
-        <div className="p-2 border-t border-gray-100">
-          <Button
-            variant="ghost"
-            onClick={() => openCreateTaskModal(list.boardId, list.id)}
-            className="w-full justify-start text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50/50 h-8"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add task
-          </Button>
-        </div>
+        {/* Add Task Button (Owner only) */}
+        {isOwner && (
+          <div className="p-2 border-t border-gray-100">
+            <Button
+              variant="ghost"
+              onClick={() => openCreateTaskModal(list.boardId, list.id)}
+              className="w-full justify-start text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50/50 h-8"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add task
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Delete List Confirmation Dialog */}

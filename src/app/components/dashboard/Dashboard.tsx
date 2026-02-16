@@ -275,17 +275,19 @@ export function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Delete on hover */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeletingBoardId(board.id);
-                    }}
-                    className="absolute top-4 right-3 opacity-0 group-hover:opacity-100
-                      text-xs text-gray-400 hover:text-red-600 transition-all"
-                  >
-                    Delete
-                  </button>
+                  {/* Delete on hover (Owner only) */}
+                  {board.ownerId === currentUser?.id && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingBoardId(board.id);
+                      }}
+                      className="absolute top-4 right-3 opacity-0 group-hover:opacity-100
+                        text-xs text-gray-400 hover:text-red-600 transition-all"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </motion.div>
             );

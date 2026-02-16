@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import * as boardService from '../services/board.service';
 import * as activityService from '../services/activity.service';
+import { ApiError } from '../utils/ApiError';
 import { getIO } from '../config/socket';
 import { AuthRequest } from '../types/express.d';
 
@@ -60,6 +61,12 @@ export const getBoard = asyncHandler(async (req: AuthRequest, res: Response) => 
 export const updateBoard = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId;
     const boardId = req.params.boardId as string;
+
+    const { board: existingBoard } = await boardService.getBoard(boardId);
+    if (existingBoard.ownerId !== userId) {
+        throw ApiError.forbidden('Only board owners can update the board');
+    }
+
     const result = await boardService.updateBoard(boardId, req.body);
 
     await activityService.logActivity({
@@ -80,8 +87,16 @@ export const updateBoard = asyncHandler(async (req: AuthRequest, res: Response) 
  * DELETE /api/boards/:boardId
  */
 export const deleteBoard = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.userId;
     const boardId = req.params.boardId as string;
+
+    const { board: existingBoard } = await boardService.getBoard(boardId);
+    if (existingBoard.ownerId !== userId) {
+        throw ApiError.forbidden('Only board owners can delete the board');
+    }
+
     await boardService.deleteBoard(boardId);
+    // ...
 
     getIO().to(`board:${boardId}`).emit('board:deleted', { boardId });
 
@@ -103,6 +118,12 @@ export const getMembers = asyncHandler(async (req: AuthRequest, res: Response) =
 export const addMember = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId;
     const boardId = req.params.boardId as string;
+
+    const { board: existingBoard } = await boardService.getBoard(boardId);
+    if (existingBoard.ownerId !== userId) {
+        throw ApiError.forbidden('Only board owners can add members');
+    }
+
     const result = await boardService.addMember(boardId, req.body.userId);
 
     // Fetch full board for the new member
@@ -134,6 +155,11 @@ export const removeMember = asyncHandler(async (req: AuthRequest, res: Response)
     const userId = req.user!.userId;
     const boardId = req.params.boardId as string;
     const targetUserId = req.params.userId as string;
+
+    const { board: existingBoard } = await boardService.getBoard(boardId);
+    if (existingBoard.ownerId !== userId) {
+        throw ApiError.forbidden('Only board owners can remove members');
+    }
 
     await boardService.removeMember(boardId, targetUserId);
 

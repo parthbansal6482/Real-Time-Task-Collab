@@ -26,6 +26,24 @@ export const loginSchema = z.object({
     password: z.string().min(1, 'Password is required'),
 });
 
+export const updateProfileSchema = z.object({
+    username: z
+        .string()
+        .min(2, 'Username must be at least 2 characters')
+        .max(30, 'Username must be at most 30 characters')
+        .regex(/^[a-zA-Z0-9_ ]+$/, 'Username can only contain letters, numbers, underscores, and spaces'),
+});
+
+export const updatePasswordSchema = z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+
 // ── Board ───────────────────────────────────────────────────────────
 
 export const createBoardSchema = z.object({
@@ -79,6 +97,10 @@ export const moveTaskSchema = z.object({
 
 export const assignTaskSchema = z.object({
     userId: z.string().uuid('Invalid user ID'),
+});
+
+export const createCommentSchema = z.object({
+    content: z.string().min(1, 'Comment content is required').max(1000),
 });
 
 // ── Pagination & Search ─────────────────────────────────────────────

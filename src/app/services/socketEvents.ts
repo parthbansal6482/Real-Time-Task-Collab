@@ -17,6 +17,7 @@ export const SOCKET_EVENTS = {
     TASK_MOVED: 'task:moved',
     TASK_ASSIGNED: 'task:assigned',
     TASK_UNASSIGNED: 'task:unassigned',
+    COMMENT_ADDED: 'comment:added',
 
     // List events
     LIST_CREATED: 'list:created',

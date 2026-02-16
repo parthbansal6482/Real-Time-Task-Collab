@@ -24,7 +24,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-  const { users, setSelectedTaskId, toggleTaskComplete, deleteTask, updateTask, editingUsers } =
+  const { users, currentUser, boards, setSelectedTaskId, toggleTaskComplete, deleteTask, updateTask, editingUsers } =
     useStore();
 
   // ── Drag Source ──────────────────────────────────────────────────
@@ -32,6 +32,7 @@ export function TaskCard({ task }: TaskCardProps) {
   const [{ isDragging }, drag] = useDrag({
     type: 'TASK',
     item: { type: 'TASK', id: task.id, listId: task.listId, index: task.order },
+    canDrag: () => hasEditPermission && isOwner, // Explicitly board controller (owner) only
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -67,8 +68,14 @@ export function TaskCard({ task }: TaskCardProps) {
     .filter(Boolean);
   const commentCount = task.comments?.length || 0;
 
+  const currentBoard = boards.find((b) => b.id === task.boardId);
+  const isCreator = currentUser?.id === task.creatorId;
+  const isOwner = currentUser?.id === currentBoard?.ownerId;
+  const hasEditPermission = isCreator || isOwner;
+
   const handleTitleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!hasEditPermission) return;
     setIsEditingTitle(true);
     setTimeout(() => titleInputRef.current?.focus(), 50);
   };
@@ -111,15 +118,17 @@ export function TaskCard({ task }: TaskCardProps) {
         ${isOverdue ? 'border-red-200 bg-red-50/30' : ''}
       `}
     >
-      {/* Delete button — shown on hover */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleDelete}
-        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
-      >
-        <Trash2 className="w-3 h-3" />
-      </Button>
+      {/* Delete button — shown on hover for authorized users */}
+      {hasEditPermission && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleDelete}
+          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      )}
 
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (
@@ -169,7 +178,7 @@ export function TaskCard({ task }: TaskCardProps) {
           <h4
             onClick={handleTitleClick}
             className={`text-sm font-medium leading-snug hover:text-indigo-600 transition-colors ${isCompleted ? 'line-through text-gray-400' : 'text-gray-900'
-              }`}
+              } ${!hasEditPermission ? 'cursor-default' : ''}`}
           >
             {task.title}
           </h4>

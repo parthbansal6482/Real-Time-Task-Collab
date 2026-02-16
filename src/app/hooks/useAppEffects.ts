@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { getSocket } from '../services/socket';
 import { SOCKET_EVENTS } from '../services/socketEvents';
+import { toast } from 'sonner';
 
 /**
  * Handle all real-time WebSocket events and update the Zustand store.
@@ -24,6 +25,8 @@ export function useSocketEffects() {
     onListDeleted,
     onBoardUpdated,
     onBoardCreated,
+    onBoardDeleted,
+    onCommentAdded,
   } = useStore();
 
   useEffect(() => {
@@ -42,6 +45,7 @@ export function useSocketEffects() {
     };
     const handleTaskAssigned = (data: any) => onTaskAssigned(data.taskId, data.userId, data.assignment);
     const handleTaskUnassigned = (data: any) => onTaskUnassigned(data.taskId, data.userId);
+    const handleCommentAdded = (data: any) => onCommentAdded(data);
 
     // ── List Events ───────────────────────────────────────────────
 
@@ -53,12 +57,17 @@ export function useSocketEffects() {
 
     const handleBoardUpdated = (data: any) => onBoardUpdated(data);
     const handleBoardCreated = (data: any) => onBoardCreated(data);
-    const handleBoardDeleted = (_data: any) => {
+    const handleBoardDeleted = (data: any) => {
+      const boardId = data.boardId || data.id;
+      // Remove from store first
+      onBoardDeleted(boardId);
+
       // If the current board is deleted, redirect to dashboard
       const state = useStore.getState();
-      if (state.selectedBoardId === _data.boardId) {
+      if (state.selectedBoardId === boardId) {
         state.setCurrentView('dashboard');
         state.setSelectedBoardId(null);
+        toast.info('The board you were viewing has been deleted');
       }
     };
 
@@ -144,6 +153,7 @@ export function useSocketEffects() {
     socket.on(SOCKET_EVENTS.TASK_MOVED, handleTaskMoved);
     socket.on(SOCKET_EVENTS.TASK_ASSIGNED, handleTaskAssigned);
     socket.on(SOCKET_EVENTS.TASK_UNASSIGNED, handleTaskUnassigned);
+    socket.on(SOCKET_EVENTS.COMMENT_ADDED, handleCommentAdded);
     socket.on(SOCKET_EVENTS.LIST_CREATED, handleListCreated);
     socket.on(SOCKET_EVENTS.LIST_UPDATED, handleListUpdated);
     socket.on(SOCKET_EVENTS.LIST_DELETED, handleListDeleted);
@@ -165,6 +175,7 @@ export function useSocketEffects() {
       socket.off(SOCKET_EVENTS.TASK_MOVED, handleTaskMoved);
       socket.off(SOCKET_EVENTS.TASK_ASSIGNED, handleTaskAssigned);
       socket.off(SOCKET_EVENTS.TASK_UNASSIGNED, handleTaskUnassigned);
+      socket.off(SOCKET_EVENTS.COMMENT_ADDED, handleCommentAdded);
       socket.off(SOCKET_EVENTS.LIST_CREATED, handleListCreated);
       socket.off(SOCKET_EVENTS.LIST_UPDATED, handleListUpdated);
       socket.off(SOCKET_EVENTS.LIST_DELETED, handleListDeleted);
@@ -195,6 +206,9 @@ export function useSocketEffects() {
     onListUpdated,
     onListDeleted,
     onBoardUpdated,
+    onBoardCreated,
+    onBoardDeleted,
+    onCommentAdded,
   ]);
 }
 

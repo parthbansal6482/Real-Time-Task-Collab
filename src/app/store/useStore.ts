@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { authApi, boardsApi, listsApi, tasksApi, activitiesApi, setToken, getToken } from '../services/api';
+import { authApi, boardsApi, listsApi, tasksApi, activitiesApi, commentsApi, setToken, getToken } from '../services/api';
 import { toast } from 'sonner';
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -36,6 +36,8 @@ export interface Comment {
   id: string;
   taskId: string;
   userId: string;
+  userName?: string;
+  userAvatar?: string;
   content: string;
   createdAt: string;
 }
@@ -174,6 +176,8 @@ interface AppState {
 
   // User actions
   fetchUsers: () => Promise<void>;
+  updateProfile: (data: { username: string }) => Promise<void>;
+  updatePassword: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
 
   // List actions
   createList: (boardId: string, title: string) => void;
@@ -214,6 +218,8 @@ interface AppState {
   onListDeleted: (listId: string) => void;
   onBoardUpdated: (board: any) => void;
   onBoardCreated: (board: any) => void;
+  onBoardDeleted: (boardId: string) => void;
+  onCommentAdded: (data: { comment: any; taskId: string }) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -338,6 +344,28 @@ export const useStore = create<AppState>((set, get) => ({
       activities: [],
       notifications: [],
     });
+  },
+
+  updateProfile: async (data: { username: string }) => {
+    try {
+      const response = await authApi.updateProfile(data);
+      const user = response.user || response;
+      set((state) => ({
+        currentUser: state.currentUser ? { ...state.currentUser, name: user.username || user.name } : null
+      }));
+    } catch (error: any) {
+      console.error('[useStore] updateProfile failed:', error);
+      throw error;
+    }
+  },
+
+  updatePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    try {
+      await authApi.updatePassword(data);
+    } catch (error: any) {
+      console.error('[useStore] updatePassword failed:', error);
+      throw error;
+    }
   },
 
   checkAuth: async () => {
@@ -867,6 +895,8 @@ export const useStore = create<AppState>((set, get) => ({
     if (updates.description !== undefined) apiUpdates.description = updates.description;
     if (updates.listId !== undefined) apiUpdates.listId = updates.listId;
     if (updates.order !== undefined) apiUpdates.position = updates.order;
+    if (updates.status !== undefined) apiUpdates.status = updates.status;
+    if (updates.priority !== undefined) apiUpdates.priority = updates.priority;
 
     if (Object.keys(apiUpdates).length > 0) {
       tasksApi.update(id, apiUpdates)
@@ -886,6 +916,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   moveTask: (taskId, fromListId, toListId, newOrder) => {
+    // Save state for potential reversal
+    const previousTasks = [...get().tasks];
+    const previousLists = [...get().lists];
+
     set((state) => ({
       tasks: state.tasks.map((t) =>
         t.id === taskId ? { ...t, listId: toListId, order: newOrder } : t
@@ -896,26 +930,50 @@ export const useStore = create<AppState>((set, get) => ({
         }
         if (l.id === toListId) {
           const newTaskIds = [...l.taskIds];
-          newTaskIds.splice(newOrder, 0, taskId);
+          // Ensure newOrder is within bounds
+          const safeOrder = Math.max(0, Math.min(newOrder, newTaskIds.length));
+          newTaskIds.splice(safeOrder, 0, taskId);
           return { ...l, taskIds: newTaskIds };
         }
         return l;
       }),
     }));
 
-    tasksApi.update(taskId, { listId: toListId, position: newOrder }).catch(() => { });
+    tasksApi.move(taskId, toListId, newOrder)
+      .catch((err) => {
+        console.error('[useStore] Task move failed:', err);
+        toast.error(err.message || 'Failed to move task');
+        // Revert UI state
+        set({ tasks: previousTasks, lists: previousLists });
+      });
 
-    get().addActivity({
-      type: 'task_moved',
-      message: `moved a task to another list`,
-      userId: get().currentUser?.id || '1',
-      boardId: get().tasks.find((t) => t.id === taskId)?.boardId || '',
-    });
+    const taskToMove = get().tasks.find(t => t.id === taskId);
+    if (taskToMove) {
+      get().addActivity({
+        type: 'task_moved',
+        message: `moved a task to another list`,
+        userId: get().currentUser?.id || '1',
+        boardId: taskToMove.boardId,
+      });
+    }
   },
 
   deleteTask: (id) => {
     const task = get().tasks.find((t) => t.id === id);
     if (!task) return;
+
+    const currentBoard = get().boards.find(b => b.id === task.boardId);
+    const isOwner = get().currentUser?.id === currentBoard?.ownerId;
+    const isCreator = get().currentUser?.id === task.creatorId;
+
+    if (!isOwner && !isCreator) {
+      toast.error('You do not have permission to delete this task');
+      return;
+    }
+
+    // Save previous state to revert if needed
+    const previousTasks = [...get().tasks];
+    const previousLists = [...get().lists];
 
     set((state) => ({
       tasks: state.tasks.filter((t) => t.id !== id),
@@ -926,8 +984,16 @@ export const useStore = create<AppState>((set, get) => ({
       ),
     }));
 
-    tasksApi.delete(id).catch(() => { });
-    toast.success(`Task "${task.title}" deleted`);
+    tasksApi.delete(id)
+      .then(() => {
+        toast.success(`Task "${task.title}" deleted`);
+      })
+      .catch((err) => {
+        console.error('[useStore] Failed to delete task:', err);
+        toast.error(err.message || 'Failed to delete task');
+        // Revert
+        set({ tasks: previousTasks, lists: previousLists });
+      });
   },
 
   toggleTaskComplete: (id) => {
@@ -938,25 +1004,37 @@ export const useStore = create<AppState>((set, get) => ({
     get().updateTask(id, { status: newStatus });
   },
 
-  addComment: (taskId, content) => {
-    const task = get().tasks.find((t) => t.id === taskId);
-    if (!task) return;
+  addComment: async (taskId, content) => {
+    try {
+      const response = await commentsApi.create(taskId, content);
+      const { comment } = response;
 
-    const newComment: Comment = {
-      id: generateId('comment'),
-      taskId,
-      userId: get().currentUser?.id || '1',
-      content,
-      createdAt: new Date().toISOString(),
-    };
+      const mappedComment: Comment = {
+        id: comment.id || comment._id,
+        taskId: taskId,
+        userId: comment.userId,
+        userName: comment.user?.username || comment.user?.name,
+        userAvatar: (comment.user?.username || comment.user?.name || '')
+          .split(' ')
+          .map((n: string) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2),
+        content: comment.content,
+        createdAt: comment.createdAt,
+      };
 
-    set((state) => ({
-      tasks: state.tasks.map((t) =>
-        t.id === taskId
-          ? { ...t, comments: [...(t.comments || []), newComment] }
-          : t
-      ),
-    }));
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, comments: [...(t.comments || []), mappedComment] }
+            : t
+        ),
+      }));
+    } catch (error: any) {
+      console.error('[useStore] addComment failed:', error);
+      toast.error(error.message || 'Failed to add comment');
+    }
   },
 
   // ── Activities ────────────────────────────────────────────────────
@@ -1223,7 +1301,7 @@ export const useStore = create<AppState>((set, get) => ({
       color: b.color || '#6366f1',
       memberIds: (b.members || []).map((m: any) => m.userId || m.id),
       ownerId: b.ownerId,
-      createdAt: b.createdAt || b.updatedAt || new Date().toISOString(),
+      createdAt: b.createdAt || new Date().toISOString(),
       updatedAt: b.updatedAt || b.createdAt || new Date().toISOString(),
       taskCount: b.taskCount || 0,
       lists: (b.lists || []).length,
@@ -1235,6 +1313,15 @@ export const useStore = create<AppState>((set, get) => ({
         boards: [newBoard, ...state.boards],
       };
     });
+  },
+
+  onBoardDeleted: (boardId) => {
+    set((state) => ({
+      boards: state.boards.filter((b) => b.id !== boardId),
+      // Also clear tasks and lists related to this board if they were loaded
+      tasks: state.tasks.filter((t) => t.boardId !== boardId),
+      lists: state.lists.filter((l) => l.boardId !== boardId),
+    }));
   },
 
   fetchUsers: async () => {
@@ -1275,5 +1362,37 @@ export const useStore = create<AppState>((set, get) => ({
     } catch {
       // Ignore in mock mode
     }
+  },
+
+  onCommentAdded: (data) => {
+    const { comment, taskId } = data;
+    const mappedComment: Comment = {
+      id: comment.id || comment._id,
+      taskId: taskId,
+      userId: comment.userId,
+      userName: comment.user?.username || comment.user?.name,
+      userAvatar: (comment.user?.username || comment.user?.name || '')
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2),
+      content: comment.content,
+      createdAt: comment.createdAt,
+    };
+
+    set((state) => {
+      // Deduplicate: if this comment already exists (e.g. from local add), don't add it again
+      const task = state.tasks.find(t => t.id === taskId);
+      if (task && task.comments?.some(c => c.id === mappedComment.id)) return state;
+
+      return {
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, comments: [...(t.comments || []), mappedComment] }
+            : t
+        ),
+      };
+    });
   },
 }));

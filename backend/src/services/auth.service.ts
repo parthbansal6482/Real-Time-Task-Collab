@@ -82,3 +82,43 @@ export async function listUsers(currentUserId: string): Promise<{ users: SafeUse
     });
     return { users: users.map(toSafeUser) };
 }
+
+/**
+ * Update user profile (username).
+ */
+export async function updateProfile(userId: string, username: string) {
+    // Check if username is already taken by another user
+    const existing = await prisma.user.findFirst({
+        where: { username, id: { not: userId } },
+    });
+
+    if (existing) {
+        throw ApiError.conflict('Username is already taken');
+    }
+
+    const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { username },
+    });
+
+    return { user: toSafeUser(updated) };
+}
+
+/**
+ * Update user password.
+ */
+export async function updatePassword(userId: string, currentPass: string, newPass: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw ApiError.notFound('User not found');
+
+    const valid = await bcrypt.compare(currentPass, user.passwordHash);
+    if (!valid) throw ApiError.unauthorized('Invalid current password');
+
+    const passwordHash = await bcrypt.hash(newPass, SALT_ROUNDS);
+    await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+    });
+
+    return { user: toSafeUser(user) };
+}

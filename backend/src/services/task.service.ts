@@ -15,6 +15,10 @@ export async function getTasksByList(listId: string, page: number, limit: number
                 assignments: {
                     include: { user: { select: { id: true, username: true, email: true } } },
                 },
+                comments: {
+                    include: { user: { select: { id: true, username: true, email: true } } },
+                    orderBy: { createdAt: 'asc' },
+                },
             },
             skip: (page - 1) * limit,
             take: limit,
@@ -36,6 +40,10 @@ export async function getTask(taskId: string) {
             createdBy: { select: { id: true, username: true, email: true } },
             assignments: {
                 include: { user: { select: { id: true, username: true, email: true } } },
+            },
+            comments: {
+                include: { user: { select: { id: true, username: true, email: true } } },
+                orderBy: { createdAt: 'asc' },
             },
         },
     });
@@ -96,6 +104,10 @@ export async function createTask(
             createdBy: { select: { id: true, username: true } },
             assignments: {
                 include: { user: { select: { id: true, username: true, email: true } } },
+            },
+            comments: {
+                include: { user: { select: { id: true, username: true, email: true } } },
+                orderBy: { createdAt: 'asc' },
             },
         },
     });
@@ -168,6 +180,10 @@ export async function updateTask(
             assignments: {
                 include: { user: { select: { id: true, username: true, email: true } } },
             },
+            comments: {
+                include: { user: { select: { id: true, username: true, email: true } } },
+                orderBy: { createdAt: 'asc' },
+            },
         },
     });
 
@@ -231,6 +247,10 @@ export async function moveTask(taskId: string, newListId: string, newPosition: n
             createdBy: { select: { id: true, username: true } },
             assignments: {
                 include: { user: { select: { id: true, username: true, email: true } } },
+            },
+            comments: {
+                include: { user: { select: { id: true, username: true, email: true } } },
+                orderBy: { createdAt: 'asc' },
             },
         },
     });

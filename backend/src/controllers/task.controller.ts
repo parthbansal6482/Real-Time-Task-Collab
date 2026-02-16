@@ -2,7 +2,9 @@ import { Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import * as taskService from '../services/task.service';
+import * as boardService from '../services/board.service';
 import * as activityService from '../services/activity.service';
+import { ApiError } from '../utils/ApiError';
 import { getIO } from '../config/socket';
 import { AuthRequest } from '../types/express.d';
 
@@ -59,6 +61,21 @@ export const getTask = asyncHandler(async (req: AuthRequest, res: Response) => {
 export const updateTask = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId;
     const taskId = req.params.taskId as string;
+
+    const { task: existingTask } = await taskService.getTask(taskId);
+    const { board: existingBoard } = await boardService.getBoard(existingTask.list.boardId);
+
+    const isCreator = existingTask.createdById === userId;
+    const isOwner = existingBoard.ownerId === userId;
+
+    // Check if the update is only a status change
+    const updateFields = Object.keys(req.body);
+    const isStatusOnly = updateFields.length === 1 && updateFields[0] === 'status';
+
+    if (!isCreator && !isOwner && !isStatusOnly) {
+        throw ApiError.forbidden('Only the task creator or board owner can perform this update');
+    }
+
     const result = await taskService.updateTask(taskId, req.body);
 
     await activityService.logActivity({
@@ -81,6 +98,17 @@ export const updateTask = asyncHandler(async (req: AuthRequest, res: Response) =
 export const deleteTask = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId;
     const taskId = req.params.taskId as string;
+
+    const { task: existingTask } = await taskService.getTask(taskId);
+    const { board: existingBoard } = await boardService.getBoard(existingTask.list.boardId);
+
+    const isCreator = existingTask.createdById === userId;
+    const isOwner = existingBoard.ownerId === userId;
+
+    if (!isCreator && !isOwner) {
+        throw ApiError.forbidden('Only the task creator or board owner can delete this task');
+    }
+
     const result = await taskService.deleteTask(taskId);
 
     await activityService.logActivity({
@@ -107,6 +135,13 @@ export const moveTask = asyncHandler(async (req: AuthRequest, res: Response) => 
     const userId = req.user!.userId;
     const taskId = req.params.taskId as string;
     const { listId, position } = req.body;
+
+    const { task: existingTask } = await taskService.getTask(taskId);
+    const { board: existingBoard } = await boardService.getBoard(existingTask.list.boardId);
+
+    if (existingBoard.ownerId !== userId) {
+        throw ApiError.forbidden('Only the board owner can move tasks across lists');
+    }
 
     const result = await taskService.moveTask(taskId, listId, position);
 
@@ -142,6 +177,16 @@ export const assignUser = asyncHandler(async (req: AuthRequest, res: Response) =
     const taskId = req.params.taskId as string;
     const assigneeId = req.body.userId as string;
 
+    const { task: existingTask } = await taskService.getTask(taskId);
+    const { board: existingBoard } = await boardService.getBoard(existingTask.list.boardId);
+
+    const isCreator = existingTask.createdById === userId;
+    const isOwner = existingBoard.ownerId === userId;
+
+    if (!isCreator && !isOwner) {
+        throw ApiError.forbidden('Only the task creator or board owner can manage assignees');
+    }
+
     const result = await taskService.assignUser(taskId, assigneeId);
 
     await activityService.logActivity({
@@ -169,6 +214,16 @@ export const unassignUser = asyncHandler(async (req: AuthRequest, res: Response)
     const userId = req.user!.userId;
     const taskId = req.params.taskId as string;
     const targetUserId = req.params.userId as string;
+
+    const { task: existingTask } = await taskService.getTask(taskId);
+    const { board: existingBoard } = await boardService.getBoard(existingTask.list.boardId);
+
+    const isCreator = existingTask.createdById === userId;
+    const isOwner = existingBoard.ownerId === userId;
+
+    if (!isCreator && !isOwner) {
+        throw ApiError.forbidden('Only the task creator or board owner can manage assignees');
+    }
 
     const result = await taskService.unassignUser(taskId, targetUserId);
 
