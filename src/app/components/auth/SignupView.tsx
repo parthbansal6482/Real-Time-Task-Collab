@@ -215,7 +215,7 @@ export function SignupView({ onSwitchToLogin }: SignupViewProps) {
               <button
                 type="button"
                 onClick={onSwitchToLogin}
-                className="font-medium text-bg-[#3A9AFF] transition-colors"
+                className="font-medium text-[#3A9AFF] hover:opacity-80 transition-colors"
                 disabled={isLoading}
               >
                 Sign in

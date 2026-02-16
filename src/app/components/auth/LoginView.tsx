@@ -141,7 +141,7 @@ export function LoginView({ onSwitchToSignup }: LoginViewProps) {
               <button
                 type="button"
                 onClick={onSwitchToSignup}
-                className="font-medium text-bg-[#3A9AFF] transition-colors"
+                className="font-medium text-[#3A9AFF] hover:opacity-80 transition-colors"
                 disabled={isLoading}
               >
                 Sign up
