@@ -12,6 +12,8 @@ RUN npm install
 COPY . .
 RUN npx prisma generate
 RUN npm run build
+# Transpile the seed script separately since it's outside the src root
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --skipLibCheck --target es2022 --module commonjs
 
 # Runtime Stage
 FROM node:20-alpine AS runtime
