@@ -22,6 +22,9 @@ erDiagram
     TASK ||--o{ COMMENT : has_comments
 ```
 
+### Visual Schema Design
+![Schema Design](./Schema%20Design.png)
+
 ## 📋 Key Models
 
 ### 1. User
