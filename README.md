@@ -133,6 +133,23 @@ Explore the platform using these pre-configured accounts:
     ```
 2.  **Launch**: `npm run dev` (Runs on port 5173)
 
+## 🐳 Running with Docker
+
+You can run the entire platform (Frontend, Backend, and PostgreSQL) with a single command using Docker Compose.
+
+1.  **Prerequisites**: Ensure you have [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed.
+2.  **Start Services**:
+    ```bash
+    docker-compose up --build
+    ```
+3.  **Access**:
+    - **Frontend**: `http://localhost:80`
+    - **Backend**: `http://localhost:5000`
+4.  **Seed Data**: (Optional) To populate the Docker database with sample data:
+    ```bash
+    docker exec -it taskflow-backend npx prisma db seed
+    ```
+
 ---
 
 *Built with passion for high-performance team collaboration.*
