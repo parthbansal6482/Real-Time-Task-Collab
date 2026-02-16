@@ -24,7 +24,7 @@ async function main() {
     console.log('  ✓ Database cleared');
 
     // ── Users ───────────────────────────────────────────────────────
-    const passwordHash = await bcrypt.hash('Duality@2026', 12);
+    const passwordHash = await bcrypt.hash('Test@123', 12);
 
     const usersData = [
         { email: 'sarah@example.com', username: 'Sarah Chen' },
@@ -316,7 +316,7 @@ async function main() {
     console.log('\n✅ Seed complete!\n');
     console.log('  Demo credentials (all users use the same password):');
     console.log('    Email:    [any of the 5]@example.com');
-    console.log('    Password: Duality@2026\n');
+    console.log('    Password: Test@123\n');
 }
 
 main()
