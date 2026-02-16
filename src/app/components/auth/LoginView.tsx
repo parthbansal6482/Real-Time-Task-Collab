@@ -149,12 +149,6 @@ export function LoginView({ onSwitchToSignup }: LoginViewProps) {
             </p>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
-            <p className="text-xs text-gray-600 mb-2 font-medium">Demo Credentials:</p>
-            <p className="text-xs text-gray-500">Email: sarah@example.com</p>
-            <p className="text-xs text-gray-500">Password: any</p>
-          </div>
         </div>
       </motion.div>
     </div>
