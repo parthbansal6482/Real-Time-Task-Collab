@@ -873,7 +873,20 @@ export const useStore = create<AppState>((set, get) => ({
           });
         }
       })
-      .catch(() => { });
+      .catch((err) => {
+        console.error('[useStore] Failed to create task:', err);
+        toast.error('Failed to create task. Please try again.');
+
+        // Remove the optimistic task on failure
+        set((state) => ({
+          tasks: state.tasks.filter((t) => t.id !== newTask.id),
+          lists: state.lists.map((l) =>
+            l.id === listId
+              ? { ...l, taskIds: l.taskIds.filter((tid) => tid !== newTask.id) }
+              : l
+          ),
+        }));
+      });
 
 
     get().addActivity({

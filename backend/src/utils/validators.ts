@@ -77,7 +77,7 @@ export const createTaskSchema = z.object({
     title: z.string().min(1, 'Title is required').max(200),
     description: z.string().max(2000).optional(),
     position: z.number().int().min(0).optional(),
-    dueDate: z.string().datetime().optional(),
+    dueDate: z.string().optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
 });
 
@@ -85,7 +85,7 @@ export const updateTaskSchema = z.object({
     title: z.string().min(1).max(200).optional(),
     description: z.string().max(2000).optional(),
     position: z.number().int().min(0).optional(),
-    dueDate: z.string().datetime().nullable().optional(),
+    dueDate: z.string().nullable().optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
     status: z.enum(['active', 'completed']).optional(),
 });
