@@ -145,7 +145,7 @@ export function Dashboard() {
         </div>
         <Button
           onClick={() => setIsCreateOpen(true)}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+          className="bg-[#3A9AFF] hover:bg-[#3A9AFF]"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Board

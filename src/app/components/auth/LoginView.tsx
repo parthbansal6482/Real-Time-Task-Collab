@@ -47,7 +47,7 @@ export function LoginView({ onSwitchToSignup }: LoginViewProps) {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           {/* Logo/Brand */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#3A9AFF] mb-4">
               <LogIn className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-semibold text-gray-900">Welcome back</h1>
@@ -120,7 +120,7 @@ export function LoginView({ onSwitchToSignup }: LoginViewProps) {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              className="w-full h-11 bg-[#3A9AFF] hover:bg-[#3A9AFF]"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -141,7 +141,7 @@ export function LoginView({ onSwitchToSignup }: LoginViewProps) {
               <button
                 type="button"
                 onClick={onSwitchToSignup}
-                className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                className="font-medium text-bg-[#3A9AFF] transition-colors"
                 disabled={isLoading}
               >
                 Sign up

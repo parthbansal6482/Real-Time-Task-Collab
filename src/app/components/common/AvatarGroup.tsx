@@ -27,7 +27,7 @@ export function AvatarGroup({ users, max = 3, size = 'md' }: AvatarGroupProps) {
               <Avatar
                 className={`${sizeClasses[size]} border-2 border-white ring-1 ring-gray-200 hover:z-10 transition-all`}
               >
-                <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                <AvatarFallback className="bg-[#3A9AFF] text-white">
                   {user.avatar}
                 </AvatarFallback>
               </Avatar>

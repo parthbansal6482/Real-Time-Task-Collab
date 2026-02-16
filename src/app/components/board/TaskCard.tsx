@@ -253,7 +253,7 @@ export function TaskCard({ task }: TaskCardProps) {
                 <Tooltip>
                   <TooltipTrigger>
                     <Avatar className="w-5 h-5 border border-white">
-                      <AvatarFallback className="text-[8px] bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                      <AvatarFallback className="text-[8px] bg-[#3A9AFF] text-white">
                         {user.avatar}
                       </AvatarFallback>
                     </Avatar>

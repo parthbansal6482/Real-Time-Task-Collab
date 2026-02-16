@@ -399,7 +399,7 @@ export function TaskModal() {
                         onClick={() => canEdit && handleToggleAssignee(user.id)}
                       >
                         <Avatar className="w-4 h-4 mr-1">
-                          <AvatarFallback className="text-[8px] bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                          <AvatarFallback className="text-[8px] bg-[#3A9AFF] text-white">
                             {user.avatar}
                           </AvatarFallback>
                         </Avatar>
@@ -440,7 +440,7 @@ export function TaskModal() {
                 {/* Comment Input */}
                 <div className="flex gap-2">
                   <Avatar className="w-7 h-7 flex-shrink-0 mt-0.5">
-                    <AvatarFallback className="text-[10px] bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                    <AvatarFallback className="text-[10px] bg-[#3A9AFF] text-white">
                       {currentUser?.avatar || '?'}
                     </AvatarFallback>
                   </Avatar>

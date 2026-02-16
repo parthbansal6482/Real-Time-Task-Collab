@@ -165,7 +165,7 @@ export function BoardView() {
                   <SelectItem key={member.id} value={member.id}>
                     <div className="flex items-center gap-2">
                       <Avatar className="w-4 h-4">
-                        <AvatarFallback className="text-[8px] bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                        <AvatarFallback className="text-[8px] bg-[#3A9AFF] text-white">
                           {member.avatar}
                         </AvatarFallback>
                       </Avatar>

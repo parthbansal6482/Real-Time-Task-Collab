@@ -92,7 +92,7 @@ export function SettingsModal() {
           <TabsContent value="profile" className="space-y-4 mt-6">
             <div className="flex items-center gap-4 mb-6">
               <Avatar className="w-16 h-16 shadow-sm border border-gray-100">
-                <AvatarFallback className="text-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-semibold">
+                <AvatarFallback className="text-xl bg-[#3A9AFF] text-white font-semibold">
                   {currentUser?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>

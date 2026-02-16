@@ -73,7 +73,7 @@ export function AppSidebar() {
             animate={{ opacity: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#3A9AFF] flex items-center justify-center">
               <span className="text-white text-sm font-bold">T</span>
             </div>
             <span className="font-semibold text-gray-900">TaskFlow</span>

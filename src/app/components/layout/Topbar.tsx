@@ -92,7 +92,7 @@ export function Topbar() {
                   <TooltipTrigger>
                     <div className="relative">
                       <Avatar className="w-7 h-7 border-2 border-white">
-                        <AvatarFallback className="text-xs bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                        <AvatarFallback className="text-xs bg-[#3A9AFF] text-white">
                           {user.avatar}
                         </AvatarFallback>
                       </Avatar>
@@ -152,7 +152,7 @@ export function Topbar() {
                 className="relative"
               >
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm">
+                  <AvatarFallback className="bg-[#3A9AFF] text-white text-sm">
                     {currentUser?.avatar || '?'}
                   </AvatarFallback>
                 </Avatar>

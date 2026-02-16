@@ -216,13 +216,13 @@ export function CreateTaskModal() {
                                             key={user.id}
                                             variant={isSelected ? 'default' : 'secondary'}
                                             className={`cursor-pointer transition-all px-2 py-1 flex items-center gap-1.5 ${isSelected
-                                                    ? 'bg-indigo-600 hover:bg-indigo-700'
-                                                    : 'hover:bg-gray-200'
+                                                ? 'bg-indigo-600 hover:bg-indigo-700'
+                                                : 'hover:bg-gray-200'
                                                 }`}
                                             onClick={() => handleToggleAssignee(user.id)}
                                         >
                                             <Avatar className="w-4 h-4">
-                                                <AvatarFallback className="text-[8px] bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
+                                                <AvatarFallback className="text-[8px] bg-[#3A9AFF] text-white">
                                                     {user.avatar}
                                                 </AvatarFallback>
                                             </Avatar>
