@@ -23,7 +23,7 @@ services:
       JWT_SECRET: your_jwt_secret_here
       PORT: 5001
       NODE_ENV: production
-      CORS_ORIGIN: http://localhost:80
+      CORS_ORIGIN: http://localhost:5173
     depends_on:
       - db
     ports:
