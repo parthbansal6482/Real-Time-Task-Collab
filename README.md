@@ -124,7 +124,7 @@ Explore the platform using these pre-configured accounts:
     npx prisma migrate dev --name init
     npx prisma db seed
     ```
-4.  **Launch**: `npm run dev` (Runs on port 5000)
+4.  **Launch**: `npm run dev` (Runs on port 5001)
 
 ### 2. Frontend Setup
 1.  **Install Dependencies**:
@@ -143,8 +143,8 @@ You can run the entire platform (Frontend, Backend, and PostgreSQL) with a singl
     docker-compose up --build
     ```
 3.  **Access**:
-    - **Frontend**: `http://localhost:80`
-    - **Backend**: `http://localhost:5000`
+    - **Frontend**: `http://localhost:5173`
+    - **Backend**: `http://localhost:5001`
 4.  **Seed Data**: (Optional) To populate the Docker database with sample data:
     ```bash
     docker exec -it taskflow-backend npx prisma db seed
