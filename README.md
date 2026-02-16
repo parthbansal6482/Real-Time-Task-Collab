@@ -74,6 +74,17 @@ The backend provides a comprehensive RESTful API for all resources.
 | POST | `/api/tasks/:id/assign` | Assign a user to a task |
 | POST | `/api/tasks/:id/comments` | Add a comment to a task |
 
+## 📂 Technical Documentation
+
+For a deeper look into the platform's design and internals, explore the following guides:
+
+- [**Frontend Architecture**](docs/frontend-architecture.md): Store management, optimistic UI, and component patterns.
+- [**Backend Architecture**](docs/backend-architecture.md): Service-Controller patterns, middleware, and project structure.
+- [**Database Schema**](docs/database-schema.md): ER diagrams and detailed model descriptions.
+- [**API Contract Design**](docs/api-contract.md): Request validation, response envelopes, and error handling.
+- [**Real-time Sync Strategy**](docs/real-time-sync.md): Socket.IO rooms, event broadcasting, and conflict resolution.
+- [**Scalability Considerations**](docs/scalability.md): Horizontal scaling, database optimization, and caching.
+
 ## ⚖️ Assumptions & Trade-offs
 
 ### 1. Optimistic Updates vs. Absolute Consistency
@@ -93,8 +104,8 @@ Explore the platform using these pre-configured accounts:
 
 | User | Email | Password |
 |---|---|---|
-| **Sarah Chen** (Product) | `sarah@example.com` | `Duality@2026` |
-| **Alex Rivera** (Dev) | `alex@example.com` | `Duality@2026` |
+| **Sarah Chen** | `sarah@example.com` | `Test@123` |
+| **Alex Rivera** | `alex@example.com` | `Test@123` |
 
 ## ⚙️ Getting Started
 
