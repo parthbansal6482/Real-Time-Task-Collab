@@ -145,10 +145,7 @@ You can run the entire platform (Frontend, Backend, and PostgreSQL) with a singl
 3.  **Access**:
     - **Frontend**: `http://localhost:5173`
     - **Backend**: `http://localhost:5001`
-4.  **Seed Data**: (Optional) To populate the Docker database with sample data:
-    ```bash
-    docker exec -it taskflow-backend npx prisma db seed
-    ```
+
 
 ---
 

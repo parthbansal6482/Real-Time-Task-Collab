@@ -30,4 +30,5 @@ RUN npm prune --production
 EXPOSE 5000
 
 # Script to run migrations and start server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/server.js"]
+
