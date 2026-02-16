@@ -136,7 +136,7 @@ export function TaskCard({ task }: TaskCardProps) {
           {task.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700"
+              className="px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-[#3A9AFF]"
             >
               {tag}
             </span>
@@ -177,7 +177,7 @@ export function TaskCard({ task }: TaskCardProps) {
         ) : (
           <h4
             onClick={handleTitleClick}
-            className={`text-sm font-medium leading-snug hover:text-indigo-600 transition-colors ${isCompleted ? 'line-through text-gray-400' : 'text-gray-900'
+            className={`text-sm font-medium leading-snug hover:text-[#3A9AFF] transition-colors ${isCompleted ? 'line-through text-gray-400' : 'text-gray-900'
               } ${!hasEditPermission ? 'cursor-default' : ''}`}
           >
             {task.title}

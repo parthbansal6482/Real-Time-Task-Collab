@@ -4,7 +4,7 @@ export function KeyboardShortcutsHint() {
   return (
     <div className="fixed bottom-4 right-4 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-4 max-w-xs hidden xl:block">
       <div className="flex items-center gap-2 mb-3">
-        <Keyboard className="w-4 h-4 text-indigo-600" />
+        <Keyboard className="w-4 h-4 text-[#3A9AFF]" />
         <h3 className="text-sm font-semibold text-gray-900">Keyboard Shortcuts</h3>
       </div>
       <div className="space-y-2 text-xs text-gray-600">

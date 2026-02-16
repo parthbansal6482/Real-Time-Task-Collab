@@ -247,7 +247,7 @@ export function CreateTaskModal() {
                                     <Badge
                                         key={tag}
                                         variant="secondary"
-                                        className="text-xs py-1 px-2.5 bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center gap-1"
+                                        className="text-xs py-1 px-2.5 bg-indigo-50 text-[#3A9AFF] border border-indigo-100 flex items-center gap-1"
                                     >
                                         {tag}
                                         <button
@@ -290,7 +290,7 @@ export function CreateTaskModal() {
                                             setTimeout(() => tagInputRef.current?.focus(), 50);
                                         }}
                                         className="h-8 px-3 rounded-full border border-dashed border-gray-300 text-xs 
-                      text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 
+                      text-gray-500 hover:border-indigo-400 hover:text-[#3A9AFF] hover:bg-indigo-50 
                       flex items-center gap-1.5 transition-all"
                                     >
                                         <Plus className="w-3.5 h-3.5" />

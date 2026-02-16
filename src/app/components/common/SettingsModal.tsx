@@ -133,7 +133,7 @@ export function SettingsModal() {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={isLoading || name === currentUser?.name}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 h-10 shadow-sm transition-all"
+                  className="w-full bg-[#3A9AFF] hover:bg-[#3A9AFF] h-10 shadow-sm transition-all"
                 >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Save Profile Changes
@@ -198,14 +198,14 @@ export function SettingsModal() {
               <Button
                 onClick={handleChangePassword}
                 disabled={isLoading || !newPassword}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 h-10 shadow-sm mt-4"
+                className="w-full bg-[#3A9AFF] hover:bg-[#3A9AFF] h-10 shadow-sm mt-4"
               >
                 {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Update Password
               </Button>
 
               <div className="bg-indigo-50/50 rounded-lg p-3 border border-indigo-100 mt-4">
-                <p className="text-[11px] text-indigo-700 leading-relaxed">
+                <p className="text-[11px] text-[#3A9AFF] leading-relaxed">
                   <strong>Password Requirements:</strong> Must be at least 8 characters long and contain uppercase, lowercase, and numeric characters.
                 </p>
               </div>

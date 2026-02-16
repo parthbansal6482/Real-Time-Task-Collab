@@ -262,7 +262,7 @@ export function KanbanList({ list, index, moveList }: KanbanListProps) {
             <Button
               variant="ghost"
               onClick={() => openCreateTaskModal(list.boardId, list.id)}
-              className="w-full justify-start text-sm text-gray-500 hover:text-indigo-600 hover:bg-indigo-50/50 h-8"
+              className="w-full justify-start text-sm text-gray-500 hover:text-[#3A9AFF] hover:bg-indigo-50/50 h-8"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add task

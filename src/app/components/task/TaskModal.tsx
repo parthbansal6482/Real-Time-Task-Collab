@@ -305,7 +305,7 @@ export function TaskModal() {
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="text-xs pl-2 pr-1 py-0.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                      className="text-xs pl-2 pr-1 py-0.5 bg-indigo-100 text-[#3A9AFF] hover:bg-indigo-200"
                     >
                       {tag}
                       {isCreator && (
@@ -342,7 +342,7 @@ export function TaskModal() {
                         setIsAddingTag(true);
                         setTimeout(() => tagInputRef.current?.focus(), 50);
                       }}
-                      className="text-xs text-gray-400 hover:text-indigo-600 flex items-center gap-0.5 transition-colors"
+                      className="text-xs text-gray-400 hover:text-[#3A9AFF] flex items-center gap-0.5 transition-colors"
                     >
                       <Plus className="w-3 h-3" /> Add tag
                     </button>
@@ -414,7 +414,7 @@ export function TaskModal() {
                             onClick={() => handleToggleAssignee(user.id)}
                             className="flex items-center gap-1 px-2 py-0.5 text-xs text-gray-400 
                               border border-dashed border-gray-300 rounded-full
-                              hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                              hover:border-indigo-400 hover:text-[#3A9AFF] hover:bg-indigo-50 transition-all"
                           >
                             <Plus className="w-3 h-3" />
                             {user.name}

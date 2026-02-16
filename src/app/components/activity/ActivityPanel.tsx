@@ -31,7 +31,7 @@ export function ActivityPanel() {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center gap-2">
-                <ActivityIcon className="w-5 h-5 text-indigo-600" />
+                <ActivityIcon className="w-5 h-5 text-[#3A9AFF]" />
                 <h2 className="text-lg font-semibold text-gray-900">Activity</h2>
               </div>
               <button
@@ -56,7 +56,7 @@ export function ActivityPanel() {
                       <div key={activity.id} className="flex gap-3 group">
                         {/* Avatar */}
                         <Avatar className="w-10 h-10 flex-shrink-0">
-                          <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-sm">
+                          <AvatarFallback className="bg-[#3A9AFF] text-white text-sm">
                             {user?.avatar}
                           </AvatarFallback>
                         </Avatar>

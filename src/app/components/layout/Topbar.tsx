@@ -126,7 +126,7 @@ export function Topbar() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleActivityPanel}
-                className={isActivityPanelOpen ? 'bg-indigo-50 text-indigo-600' : ''}
+                className={isActivityPanelOpen ? 'bg-indigo-50 text-[#3A9AFF]' : ''}
               >
                 {isActivityPanelOpen ? (
                   <PanelRightClose className="w-5 h-5" />
