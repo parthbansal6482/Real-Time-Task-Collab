@@ -1,0 +1,134 @@
+# ================================================================================
+#            REAL-TIME TASK COLLABORATION PROJECT - INTERVIEW GUIDE (V2)
+# ================================================================================
+
+# --------------------------------------------------------------------------------
+# SECTION 1: FRONTEND (React, Zustand, Framer Motion, Socket.IO)
+# --------------------------------------------------------------------------------
+
+Q1: Why was Zustand chosen over Redux or Context API?
+A: Zustand was chosen for its minimal boilerplate and "un-opinionated" approach. Unlike Redux, it doesn't require providers or complex reducers, which suits this project's need for a fast-moving, real-time store. It provides a clean hook-based API that makes it easy to separate state logic from UI components. It also handles transient state updates (scrolling, dragging) without the overhead of massive re-renders.
+
+Q2: How does the application handle "Optimistic UI" for tasks?
+A: When a user adds or moves a task, the store updates the local state immediately using set(). It then makes the API call. If the call fails, the store uses a "reversal" pattern where it rolls back the state using a preserved 'previousState' snapshot. This ensures the app feels zero-latency to the user.
+
+Q3: Explain the "ID Swapping" (CID) logic in the project.
+A: The frontend generates a temporary 'cid' (Client ID) so a new task can appear instantly. Once the backend returns the permanent database ID, the onTaskCreated action finds the task by its 'cid', replaces it with the real ID, and updates the list's taskIds array. This is critical for preventing duplicate cards when a socket broadcast arrives for the same task.
+
+Q4: How is real-time collaboration handled on the frontend?
+A: The project uses Socket.IO. We use a custom hook (useSocketEffects) that listeners for events like 'task:updated' or 'user:editing'. When an event arrives, it triggers specific actions in the Zustand store to update the UI globally without requiring a manual refresh.
+
+Q5: What is the purpose of the 'motion/react' library in this project?
+A: It's used for advanced animations. We use AnimatePresence for exit animations (like a task card fading out when deleted) and the motion component for "Real-time Indicators"—specifically the pulsing effect when another user is editing a task, which helps prevent collaborative race conditions.
+
+Q6: How are Collaborative Editing race conditions prevented visually?
+A: We implement a "Soft Lock" system. As soon as a user clicks into a task's title or description, a socket event is emitted to all other users in that board room. This triggers a visual pulsing effect on their screen that says "User X is editing," which socially discourages others from modifying the same record simultaneously.
+
+Q7: Explain the structure of the Zustand store in useStore.ts.
+A: The store uses a single "Slice" pattern but is organized into logical groups: Auth, View Management (modals/sidebars), Board Data, and Socket Handlers. It uses the `set` and `get` functions to manage state and access other actions within the same store instance.
+
+Q8: How does the app prevent unnecessary re-renders when using Zustand?
+A: Components use "Selectors" to subscribe only to specific pieces of state. Instead of `const state = useStore()`, we use `const currentUser = useStore(state => state.currentUser)`. This ensures the component only re-renders if the `currentUser` object actually changes.
+
+Q9: How is Drag and Drop implemented for Task movement?
+A: We use `react-dnd` and `react-dnd-html5-backend`. Each TaskCard is a "Draggable" and each Column/List is a "DropTarget". When a task is dropped, the `moveTask` action is called in the store, which updates the UI optimistically and notifies the backend.
+
+Q10: What is the "Self-Healing" logic for board synchronization?
+A: In `fetchBoard`, we have a timestamp-based guard that prevents duplicate fetches. If a user loses connection and reconnects, the app refetches the entire board state to ensure the local store is perfectly aligned with the database, effectively "healing" any inconsistencies that happened during the offline period.
+
+Q11: How are keyboard shortcuts managed?
+A: We use the `useAppEffects` hook which registers a global `keydown` listener. This handles shortcuts like `ESC` to close modals, `Cmd+K` for search, and `Cmd+I` for board info. It uses a registry pattern to ensure shortcuts only fire when appropriate (e.g., if a modal is open).
+
+Q12: Explain the implementation of the Global Search component.
+A: The `GlobalSearch.tsx` component filters the tasks across all boards. It doesn't rely on the backend for every character typed; instead, it uses a fuzzy search against the consolidated `tasks` array already present in the Zustand store for maximum speed.
+
+Q13: How is authentication state persisted on refresh?
+A: The store's `checkAuth` action runs on app initialization. It checks for a JWT in `localStorage` or cookies. If present, it calls the `/api/auth/me` endpoint to hydrate the `currentUser` state. If it fails, the user is redirected to the login view.
+
+Q14: Explain the importance of "Positioning" in the Kanban Lists.
+A: Since arrays are zero-indexed, the `order` field in the database determines the sequence. On the frontend, we use `.sort((a, b) => a.order - b.order)` before rendering. When a task is moved, we calculate its new index and send it to the backend to update the sequence.
+
+Q15: How are themes (Light/Dark mode) handled?
+A: We use `next-themes` and a Tailwind CSS configuration. The store holds the current theme preference, and we apply a `.dark` class to the root element. Transitions are handled via CSS variables for smooth color shifting.
+
+Q16: How does the app handle "Pending" UI states for slow connections?
+A: We use the `isLoadingBoard` and `isLoadingTask` flags in the store. While the API is fetching, components like `BoardView` render a `Skeleton` or a loading spinner from `lucide-react` to keep the user informed.
+
+Q17: What is Radix UI's role in the UI architecture?
+A: Radix provides "Headless" UI primitives for complex components like Modals (Dialog), Dropdowns, and Tooltips. This gives us accessibility (A11y) and keyboard navigation for free while allowing us to style everything ourselves with Tailwind.
+
+Q18: How do you handle Avatar Groups for multiple assignees?
+A: We have a dedicated `AvatarGroup` component that takes an array of users, calculates the first two initials for the fallback, and handles the "stacking" effect using CSS negative margins.
+
+19: How are toast notifications managed?
+A: We use `sonner`. Instead of passing notification state through the app, we call `toast.success()` or `toast.error()` directly from the Zustand store's async actions. This ensures the user gets immediate feedback on backend failures.
+
+Q20: Explain the importance of `AnimatePresence` in the task modal.
+A: `AnimatePresence` allows Framer Motion to detect when a React component is about to be unmounted. It enables the "Slide Out" or "Fade Out" animations that make the UI feel smooth rather than jerky when closing a viewer.
+
+
+# --------------------------------------------------------------------------------
+# SECTION 2: BACKEND (Node.js, Express, Prisma, PostgreSQL, Socket.IO)
+# --------------------------------------------------------------------------------
+
+Q1: How does the backend handle concurrent task reordering?
+A: The project uses Prisma Transactions ($transaction). When a task is moved to a new position, the backend atomically closes the gap in the old list (decrementing positions) and creates room in the new list (incrementing positions) before updating the target task itself.
+
+Q2: How is security handled for WebSockets?
+A: The Socket.IO server uses a connection middleware (io.use) that extracts the JWT token from the handshakeauth. It verifies the token using the secret key. If it's valid, it retrieves the user from the DB and attaches the `userId` to the socket instance for auditing all subsequent events.
+
+Q3: Explain the benefit of "Cascade Deletes" in the schema.
+A: In `schema.prisma`, relationships like `Board -> List` and `List -> Task` are defined with `onDelete: Cascade`. This means when a user deletes a Board, the database itself handles the recursive deletion of all its children. This prevents "Orphan" records and keeps the DB clean without extra code.
+
+Q4: How do "Rooms" work in our Socket.IO server?
+A: We use rooms prefixed by board IDs (e.g., `board:uuid`). When a user switches boards, the backend joins them to the new room and leaves the old one. This ensures broadcasts like `task:created` only reach users who actually care about that board.
+
+Q5: Why did we choose Zod for validation?
+A: Zod provides a "Single Source of Truth" for validation and types. We define a schema for a "Task" (e.g., title must be string, max 100 chars). Zod then validates incoming request bodies and automatically generates the TypeScript types used throughout the backend services.
+
+Q6: Explain the "Service-Controller-Router" pattern used here.
+A: Routers handle the endpoint mapping. Controllers handle the HTTP logic (extracting params, sending responses). Services handle the business logic and database interactions. This separation of concerns makes the code testable and easy to maintain.
+
+Q7: How are passwords stored securely?
+A: We use `bcryptjs`. We never store plain text passwords. During signup, we salt and hash the password. During login, we use `bcrypt.compare` to verify the hash. This protects users even if the database is compromised.
+
+Q8: How do you handle database migrations?
+A: We use Prisma Migrate. Every schema change is recorded in a SQL migration file in the `prisma/migrations` folder. This allows us to share schema changes across the team and apply them safely to production.
+
+Q9: What is the purpose of the `api-contract.md` file?
+A: It serves as the documentation for the frontend team. It defines every endpoint, required headers, request bodies, and example responses. This helps decouple frontend and backend development.
+
+Q10: How does the backend handle "Activity Logging"?
+A: We have a dedicated `Activity` model in Prisma. Every time a task is created, moved, or updated, the controller calls the `activityService` to create a new log entry. These are then broadcasted via sockets so other users see an activity feed update.
+
+Q11: Explain the implementation of the `AuthRequest` type.
+A: Since we attach a `user` object to the Express `req` in the `authenticate` middleware, we created an `AuthRequest` type that extends the standard `Request` type. This prevents TypeScript errors when accessing `req.user.userId`.
+
+Q12: How are race conditions handled when mapping positions to tasks?
+A: We use PostgreSQL's atomic operations. Instead of reading all tasks and re-saving them, we use Prisma's `updateMany` with `{ position: { increment: 1 } }`. This occurs as a single SQL command, ensuring that no other process can change the data in between read and write.
+
+Q13: Why is standard environment variable validation used?
+A: We have an `env.ts` file that uses Zod to validate that `DATABASE_URL`, `JWT_SECRET`, and `CORS_ORIGIN` are provided on startup. This prevents the server from starting in a "broken" state and provides clear error messages if a developer forgot their `.env` file.
+
+Q14: How is error handling structured in the backend?
+A: We use a custom `ApiError` class and an `errorHandler` middleware. If a service fails, it throws an `ApiError`. The middleware catches it, chooses the correct HTTP status code (404, 403, etc.), and sends a standardized JSON response.
+
+Q15: What are "Prisma Seeds" and why are they used?
+A: The `seed.ts` script populates the database with initial data (standard boards, lists, and test users). This ensures every developer starts with a working environment and makes it easy to reset the database during testing.
+
+Q16: How does the backend handle Rate Limiting?
+A: We use `express-rate-limit`. We limit the number of requests per IP address for sensitive routes (Login, Signup) to prevent brute-force attacks and ensure server stability.
+
+Q17: Explain the role of the `BoardMember` join model.
+A: It represents a Many-to-Many relationship between Users and Boards. It allows one user to be on many boards, and one board to have many members. It also stores the "Role" (e.g., Viewer, Editor, Owner) for each membership.
+
+Q18: How is CORS configured?
+A: We use the `cors` package. In production, we strictly whitelist only the frontend's domain. In development, we allow `localhost` and `127.0.0.1`. This is critical for security to prevent unauthorized websites from making requests to our API.
+
+Q19: How are Large Activity Logs managed?
+A: We implement pagination. The `/api/activity` endpoint takes `page` and `limit` parameters to only load a subset of events at a time, preventing the frontend from becoming sluggish with thousands of logs.
+
+Q20: Explain the importance of the `socket.handler` pattern.
+A: Instead of putting all socket logic in `server.ts`, we register event handlers (e.g., `registerTaskHandlers`) that contain the modular logic for specific features. This keeps the entry file clean and easy to navigate.
+
+================================================================================
